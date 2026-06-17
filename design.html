@@ -1,0 +1,3112 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Provenance — Your writing, cryptographically proven.</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <style>
+        /* ══════════════════════════════════════════════════
+   DESIGN TOKENS
+══════════════════════════════════════════════════ */
+        :root {
+            --cream: #F7F5F0;
+            --cream-mid: #EEEAE1;
+            --cream-border: #DDD8CE;
+            --blue: #3B6FD4;
+            --blue-light: #EBF0FB;
+            --blue-mid: #C8D7F7;
+            --blue-dark: #2350A8;
+            --ink: #1A1A2E;
+            --ink-2: #3D3D52;
+            --ink-3: #6B6B85;
+            --ink-4: #AEAEC2;
+            --green: #1D8A5E;
+            --green-bg: #E4F5EE;
+            --green-border: #A8DFC8;
+            --orange: #D4620A;
+            --orange-bg: #FEF0E6;
+            --red: #C0392B;
+            --red-bg: #FEE8E6;
+            --purple: #7C3AED;
+            --purple-bg: #EDE9FE;
+            --white: #FFFFFF;
+            --sui: #4DA2FF;
+            --sui-dark: #1A85FF;
+            --sui-bg: #EAF3FF;
+            --sh-sm: 0 1px 3px rgba(26, 26, 46, .06);
+            --sh-md: 0 4px 20px rgba(26, 26, 46, .09);
+            --sh-lg: 0 16px 48px rgba(26, 26, 46, .13);
+            --sh-xl: 0 24px 80px rgba(26, 26, 46, .18);
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        html {
+            scroll-behavior: smooth;
+            font-size: 16px
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--cream);
+            color: var(--ink);
+            -webkit-font-smoothing: antialiased
+        }
+
+        button {
+            cursor: pointer;
+            font-family: inherit;
+            border: none;
+            background: none
+        }
+
+        textarea,
+        input {
+            font-family: inherit
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit
+        }
+
+        ::-webkit-scrollbar {
+            width: 5px
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--cream)
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--cream-border);
+            border-radius: 3px
+        }
+
+        /* ══════════════════════════════════════════════════
+   PAGE SYSTEM
+══════════════════════════════════════════════════ */
+        .page {
+            display: none;
+            min-height: 100vh
+        }
+
+        .page.active {
+            display: block
+        }
+
+        #page-dashboard.active {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden
+        }
+
+        /* ══════════════════════════════════════════════════
+   LANDING PAGE
+══════════════════════════════════════════════════ */
+        .lnav {
+            position: fixed;
+            inset: 0 0 auto;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 62px;
+            padding: 0 2.5rem;
+            background: rgba(247, 245, 240, .94);
+            border-bottom: 1px solid var(--cream-border);
+            backdrop-filter: blur(14px)
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 9px
+        }
+
+        .brand-logo {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.2rem;
+            font-weight: 700
+        }
+
+        .pulse {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: var(--blue);
+            animation: pulse 2.4s ease-in-out infinite;
+            flex-shrink: 0
+        }
+
+        .lnav-links {
+            display: flex;
+            align-items: center;
+            gap: 1.8rem
+        }
+
+        .lnav-links a {
+            font-size: .85rem;
+            color: var(--ink-3);
+            font-weight: 500;
+            transition: color .2s
+        }
+
+        .lnav-links a:hover {
+            color: var(--ink)
+        }
+
+        .btn-connect-nav {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            background: var(--sui);
+            color: #fff;
+            font-size: .85rem;
+            font-weight: 600;
+            padding: 9px 20px;
+            border-radius: 7px;
+            transition: background .2s
+        }
+
+        .btn-connect-nav:hover {
+            background: var(--sui-dark)
+        }
+
+        .hero {
+            display: grid;
+            grid-template-columns: 1.05fr .95fr;
+            gap: 5rem;
+            align-items: center;
+            max-width: 1160px;
+            margin: 0 auto;
+            padding: 140px 2.5rem 80px
+        }
+
+        .hero-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: .72rem;
+            font-weight: 700;
+            letter-spacing: .09em;
+            text-transform: uppercase;
+            color: var(--blue);
+            background: var(--blue-light);
+            border: 1px solid var(--blue-mid);
+            padding: 5px 14px;
+            border-radius: 20px;
+            margin-bottom: 1.5rem
+        }
+
+        .hero-h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 3.7rem;
+            line-height: 1.08;
+            font-weight: 700;
+            margin-bottom: 1.25rem
+        }
+
+        .hero-h1 em {
+            font-style: italic;
+            color: var(--ink-3)
+        }
+
+        .hero-p {
+            font-size: 1.05rem;
+            color: var(--ink-3);
+            line-height: 1.75;
+            max-width: 480px;
+            margin-bottom: 2rem
+        }
+
+        .hero-btns {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 2.5rem
+        }
+
+        .btn-sui {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            background: var(--sui);
+            color: #fff;
+            font-size: .92rem;
+            font-weight: 700;
+            padding: 13px 28px;
+            border-radius: 8px;
+            transition: background .2s, transform .15s;
+            box-shadow: 0 4px 16px rgba(77, 162, 255, .35)
+        }
+
+        .btn-sui:hover {
+            background: var(--sui-dark);
+            transform: translateY(-2px)
+        }
+
+        .btn-outline {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: .92rem;
+            font-weight: 500;
+            color: var(--ink-2);
+            padding: 12px 22px;
+            border: 1px solid var(--cream-border);
+            border-radius: 8px;
+            transition: border-color .2s, background .2s
+        }
+
+        .btn-outline:hover {
+            border-color: var(--ink-4);
+            background: var(--white)
+        }
+
+        .hero-stats {
+            display: flex;
+            gap: 2.5rem
+        }
+
+        .hs-val {
+            font-family: 'Playfair Display', serif;
+            font-size: 2rem;
+            font-weight: 700
+        }
+
+        .hs-lbl {
+            font-size: .72rem;
+            color: var(--ink-4);
+            margin-top: 2px
+        }
+
+        /* Hero mockup */
+        .hero-mockup {
+            background: var(--white);
+            border: 1px solid var(--cream-border);
+            border-radius: 14px;
+            box-shadow: var(--sh-xl);
+            overflow: hidden
+        }
+
+        .mock-bar {
+            background: var(--cream-mid);
+            border-bottom: 1px solid var(--cream-border);
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px
+        }
+
+        .mac span {
+            display: inline-block;
+            width: 11px;
+            height: 11px;
+            border-radius: 50%;
+            margin-right: 4px
+        }
+
+        .mac .r {
+            background: #FF5F57
+        }
+
+        .mac .y {
+            background: #FFBD2E
+        }
+
+        .mac .g {
+            background: #28C840
+        }
+
+        .mock-url {
+            flex: 1;
+            text-align: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: .7rem;
+            color: var(--ink-4)
+        }
+
+        .mock-body {
+            padding: 1.4rem
+        }
+
+        .mock-wallet {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            background: var(--sui-bg);
+            border: 1px solid var(--blue-mid);
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: .72rem;
+            font-weight: 700;
+            color: var(--sui-dark);
+            margin-bottom: .9rem
+        }
+
+        .mock-ticker {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            font-size: .72rem;
+            color: var(--blue);
+            font-weight: 600;
+            margin-bottom: .85rem
+        }
+
+        .mock-text {
+            font-family: 'Playfair Display', serif;
+            font-size: .95rem;
+            line-height: 1.75;
+            color: var(--ink-2);
+            min-height: 70px
+        }
+
+        .mock-cursor {
+            display: inline-block;
+            width: 2px;
+            height: 1em;
+            background: var(--blue);
+            margin-left: 2px;
+            vertical-align: text-bottom;
+            animation: blink .9s step-end infinite
+        }
+
+        .mock-cps {
+            border-top: 1px solid var(--cream-border);
+            margin-top: 1rem;
+            padding-top: 1rem
+        }
+
+        .mock-cps-lbl {
+            font-size: .65rem;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            color: var(--ink-4);
+            font-weight: 700;
+            margin-bottom: .55rem
+        }
+
+        .mock-cp-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: .4rem;
+            font-size: .7rem;
+            color: var(--ink-3)
+        }
+
+        .mock-cp-row .cdot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--green);
+            flex-shrink: 0
+        }
+
+        .mock-cp-row .cbid {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--blue);
+            font-size: .67rem;
+            margin-left: auto
+        }
+
+        /* Flow section */
+        .flow-sec {
+            background: var(--white);
+            border-top: 1px solid var(--cream-border);
+            border-bottom: 1px solid var(--cream-border);
+            padding: 5.5rem 2.5rem
+        }
+
+        .flow-inner {
+            max-width: 1160px;
+            margin: 0 auto
+        }
+
+        .sec-ey {
+            font-size: .72rem;
+            font-weight: 700;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: var(--ink-4);
+            margin-bottom: .7rem
+        }
+
+        .sec-h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.4rem;
+            font-weight: 700;
+            margin-bottom: .9rem
+        }
+
+        .sec-sub {
+            font-size: 1rem;
+            color: var(--ink-3);
+            line-height: 1.7;
+            max-width: 520px
+        }
+
+        .flow-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+            margin-top: 3rem;
+            position: relative
+        }
+
+        .flow-grid::before {
+            content: '';
+            position: absolute;
+            top: 28px;
+            left: calc(12.5% + 12px);
+            right: calc(12.5% + 12px);
+            height: 1px;
+            background: linear-gradient(90deg, var(--cream-border), var(--blue-mid), var(--cream-border));
+            z-index: 0
+        }
+
+        .flow-step {
+            position: relative;
+            z-index: 1;
+            padding: 1.5rem 1.25rem;
+            border: 1px solid var(--cream-border);
+            border-radius: 10px;
+            background: var(--cream);
+            transition: box-shadow .2s
+        }
+
+        .flow-step.hi {
+            border-color: var(--blue-mid);
+            background: var(--blue-light)
+        }
+
+        .fs-num {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--white);
+            border: 2px solid var(--cream-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .8rem;
+            font-weight: 800;
+            color: var(--ink-3);
+            margin-bottom: 1rem
+        }
+
+        .flow-step.hi .fs-num {
+            background: var(--blue);
+            border-color: var(--blue);
+            color: #fff
+        }
+
+        .fs-title {
+            font-size: .9rem;
+            font-weight: 700;
+            margin-bottom: .4rem
+        }
+
+        .fs-desc {
+            font-size: .8rem;
+            color: var(--ink-3);
+            line-height: 1.6
+        }
+
+        /* Why section */
+        .why-sec {
+            background: var(--ink);
+            padding: 6rem 2.5rem
+        }
+
+        .why-inner {
+            max-width: 1160px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5rem
+        }
+
+        .why-lbl {
+            font-size: .72rem;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: var(--blue-mid);
+            font-weight: 700;
+            margin-bottom: .75rem
+        }
+
+        .why-h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.3rem;
+            font-weight: 700;
+            color: #fff;
+            line-height: 1.2;
+            margin-bottom: 1rem
+        }
+
+        .why-p {
+            color: var(--ink-4);
+            font-size: .95rem;
+            line-height: 1.75
+        }
+
+        .why-pts {
+            display: flex;
+            flex-direction: column;
+            gap: .85rem
+        }
+
+        .why-pt {
+            background: rgba(255, 255, 255, .04);
+            border: 1px solid rgba(255, 255, 255, .08);
+            border-radius: 8px;
+            padding: 1.1rem 1.3rem;
+            display: flex;
+            gap: .9rem
+        }
+
+        .why-pt-ico {
+            font-size: 1.2rem;
+            flex-shrink: 0;
+            margin-top: 1px
+        }
+
+        .why-pt-title {
+            font-size: .88rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: .2rem
+        }
+
+        .why-pt-desc {
+            font-size: .8rem;
+            color: var(--ink-4);
+            line-height: 1.6
+        }
+
+        /* Footer */
+        .land-footer {
+            border-top: 1px solid var(--cream-border);
+            padding: 2rem 2.5rem
+        }
+
+        .lf-inner {
+            max-width: 1160px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem
+        }
+
+        .lf-links {
+            display: flex;
+            gap: 1.5rem
+        }
+
+        .lf-links a {
+            font-size: .8rem;
+            color: var(--ink-4);
+            transition: color .2s
+        }
+
+        .lf-links a:hover {
+            color: var(--ink)
+        }
+
+        .lf-built {
+            font-size: .78rem;
+            color: var(--ink-4)
+        }
+
+        .lf-built a {
+            color: var(--sui)
+        }
+
+        /* ══════════════════════════════════════════════════
+   CONNECT PAGE
+══════════════════════════════════════════════════ */
+        #page-connect {
+            background: var(--cream);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 2rem
+        }
+
+        .connect-card {
+            background: var(--white);
+            border: 1px solid var(--cream-border);
+            border-radius: 20px;
+            padding: 2.75rem 2.5rem;
+            max-width: 440px;
+            width: 100%;
+            box-shadow: var(--sh-xl)
+        }
+
+        .connect-back {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: .82rem;
+            color: var(--ink-4);
+            cursor: pointer;
+            margin-bottom: 1.75rem;
+            transition: color .2s;
+            width: fit-content
+        }
+
+        .connect-back:hover {
+            color: var(--ink)
+        }
+
+        .connect-brand {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem
+        }
+
+        .connect-h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: .6rem;
+            text-align: center
+        }
+
+        .connect-p {
+            font-size: .88rem;
+            color: var(--ink-3);
+            line-height: 1.65;
+            text-align: center;
+            margin-bottom: 1.75rem
+        }
+
+        .wallet-opts {
+            display: flex;
+            flex-direction: column;
+            gap: .65rem;
+            margin-bottom: 1.25rem
+        }
+
+        .wallet-btn {
+            display: flex;
+            align-items: center;
+            gap: .9rem;
+            border: 1.5px solid var(--cream-border);
+            border-radius: 12px;
+            padding: .9rem 1.1rem;
+            transition: border-color .2s, background .2s, transform .15s;
+            text-align: left;
+            width: 100%
+        }
+
+        .wallet-btn:hover:not(:disabled) {
+            border-color: var(--sui);
+            background: var(--sui-bg);
+            transform: translateY(-1px)
+        }
+
+        .wallet-btn:disabled {
+            opacity: .45;
+            cursor: not-allowed
+        }
+
+        .wallet-btn.connecting {
+            border-color: var(--sui);
+            background: var(--sui-bg)
+        }
+
+        .wallet-btn.wconnected {
+            border-color: var(--green);
+            background: var(--green-bg)
+        }
+
+        .wi-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            background: var(--cream);
+            border: 1px solid var(--cream-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            flex-shrink: 0
+        }
+
+        .wi-name {
+            font-size: .9rem;
+            font-weight: 600
+        }
+
+        .wi-desc {
+            font-size: .75rem;
+            color: var(--ink-4);
+            margin-top: 1px
+        }
+
+        .wi-status {
+            margin-left: auto;
+            font-size: .68rem;
+            font-weight: 600;
+            padding: 2px 9px;
+            border-radius: 20px;
+            flex-shrink: 0
+        }
+
+        .wis-detecting {
+            background: var(--orange-bg);
+            color: var(--orange)
+        }
+
+        .wis-ready {
+            background: var(--green-bg);
+            color: var(--green)
+        }
+
+        .wis-na {
+            background: var(--cream-mid);
+            color: var(--ink-4)
+        }
+
+        .connect-divider {
+            display: flex;
+            align-items: center;
+            gap: .75rem;
+            margin: .25rem 0 1rem
+        }
+
+        .connect-divider::before,
+        .connect-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--cream-border)
+        }
+
+        .connect-divider span {
+            font-size: .75rem;
+            color: var(--ink-4)
+        }
+
+        .btn-demo {
+            width: 100%;
+            padding: 11px;
+            border: 1.5px dashed var(--cream-border);
+            border-radius: 10px;
+            font-size: .85rem;
+            font-weight: 500;
+            color: var(--ink-3);
+            transition: all .2s
+        }
+
+        .btn-demo:hover {
+            border-color: var(--blue);
+            color: var(--blue);
+            background: var(--blue-light)
+        }
+
+        .connect-note {
+            font-size: .75rem;
+            color: var(--ink-4);
+            text-align: center;
+            margin-top: 1.5rem;
+            line-height: 1.7
+        }
+
+        .connect-note a {
+            color: var(--sui)
+        }
+
+        /* Connect states */
+        .cstate {
+            display: none
+        }
+
+        .cstate.show {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem 0
+        }
+
+        .big-spinner {
+            width: 52px;
+            height: 52px;
+            border: 3px solid var(--blue-mid);
+            border-top-color: var(--blue);
+            border-radius: 50%;
+            animation: spin .85s linear infinite;
+            margin-bottom: 1.25rem
+        }
+
+        .cstate-label {
+            font-size: .92rem;
+            font-weight: 700;
+            margin-bottom: .35rem
+        }
+
+        .cstate-sub {
+            font-size: .8rem;
+            color: var(--ink-3);
+            text-align: center
+        }
+
+        .connected-check {
+            width: 58px;
+            height: 58px;
+            background: var(--green-bg);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.25rem;
+            font-size: 1.6rem;
+            animation: scaleIn .3s ease
+        }
+
+        .connected-addr {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: .78rem;
+            color: var(--blue);
+            background: var(--blue-light);
+            border: 1px solid var(--blue-mid);
+            padding: 6px 14px;
+            border-radius: 20px;
+            margin-bottom: .5rem
+        }
+
+        .connected-net {
+            font-size: .78rem;
+            color: var(--ink-4);
+            margin-bottom: 1.75rem
+        }
+
+        .btn-enter {
+            width: 100%;
+            background: var(--sui);
+            color: #fff;
+            font-size: .92rem;
+            font-weight: 700;
+            padding: 13px;
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: background .2s
+        }
+
+        .btn-enter:hover {
+            background: var(--sui-dark)
+        }
+
+        /* ══════════════════════════════════════════════════
+   DASHBOARD
+══════════════════════════════════════════════════ */
+        .dash-shell {
+            display: flex;
+            flex: 1;
+            height: 100vh;
+            overflow: hidden
+        }
+
+        /* Sidebar */
+        .dsidebar {
+            width: 256px;
+            flex-shrink: 0;
+            background: var(--ink);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto
+        }
+
+        .dsb-head {
+            padding: 18px 16px 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, .08);
+            display: flex;
+            align-items: center;
+            justify-content: space-between
+        }
+
+        .dsb-brand {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.1rem;
+            font-weight: 700
+        }
+
+        .dsb-newbtn {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            background: var(--blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 1.2rem;
+            transition: background .2s
+        }
+
+        .dsb-newbtn:hover {
+            background: var(--blue-dark)
+        }
+
+        .dsb-wallet {
+            margin: 10px 12px;
+            background: rgba(77, 162, 255, .12);
+            border: 1px solid rgba(77, 162, 255, .25);
+            border-radius: 8px;
+            padding: 9px 11px;
+            display: flex;
+            align-items: center;
+            gap: 8px
+        }
+
+        .dsb-wdot {
+            width: 7px;
+            height: 7px;
+            background: var(--sui);
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+            flex-shrink: 0
+        }
+
+        .dsb-waddr {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: .72rem;
+            color: #fff;
+            font-weight: 500;
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap
+        }
+
+        .dsb-wnet {
+            font-size: .62rem;
+            color: var(--ink-4);
+            margin-top: 1px
+        }
+
+        .dsb-wdiscon {
+            font-size: .65rem;
+            color: #FF7B7B;
+            cursor: pointer;
+            flex-shrink: 0
+        }
+
+        .dsb-wdiscon:hover {
+            text-decoration: underline
+        }
+
+        .dsb-nav {
+            padding: 8px 10px;
+            flex: 1
+        }
+
+        .dsb-sec-lbl {
+            font-size: .63rem;
+            text-transform: uppercase;
+            letter-spacing: .09em;
+            color: var(--ink-4);
+            font-weight: 700;
+            padding: 0 8px;
+            margin: 10px 0 3px
+        }
+
+        .dsb-navbtn {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            width: 100%;
+            padding: 8px 10px;
+            border-radius: 6px;
+            font-size: .82rem;
+            font-weight: 500;
+            color: var(--ink-4);
+            transition: background .15s, color .15s;
+            text-align: left
+        }
+
+        .dsb-navbtn:hover {
+            background: rgba(255, 255, 255, .07);
+            color: #fff
+        }
+
+        .dsb-navbtn.active {
+            background: rgba(59, 111, 212, .35);
+            color: #fff
+        }
+
+        .dsb-navbtn svg {
+            width: 15px;
+            height: 15px;
+            flex-shrink: 0
+        }
+
+        .dsb-count {
+            margin-left: auto;
+            font-size: .65rem;
+            background: rgba(255, 255, 255, .1);
+            border-radius: 10px;
+            padding: 1px 7px;
+            color: var(--ink-4)
+        }
+
+        .dsb-navbtn.active .dsb-count {
+            background: rgba(59, 111, 212, .4);
+            color: var(--blue-mid)
+        }
+
+        .dsb-bottom {
+            padding: 12px 12px;
+            border-top: 1px solid rgba(255, 255, 255, .08)
+        }
+
+        .walrus-chip {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(29, 138, 94, .15);
+            border: 1px solid rgba(29, 138, 94, .3);
+            border-radius: 7px;
+            padding: 8px 10px;
+            margin-bottom: 8px
+        }
+
+        .wc-dot {
+            width: 7px;
+            height: 7px;
+            background: var(--green);
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite
+        }
+
+        .wc-txt {
+            font-size: .72rem;
+            color: var(--green);
+            font-weight: 600
+        }
+
+        .wc-net {
+            font-size: .62rem;
+            color: var(--ink-4);
+            margin-left: auto
+        }
+
+        /* Topbar */
+        .dash-topbar {
+            background: var(--white);
+            border-bottom: 1px solid var(--cream-border);
+            padding: 0 1.75rem;
+            height: 58px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+            position: sticky;
+            top: 0;
+            z-index: 20
+        }
+
+        .dt-left {}
+
+        .dt-title {
+            font-size: .95rem;
+            font-weight: 700;
+            color: var(--ink)
+        }
+
+        .dt-session {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: .7rem;
+            color: var(--ink-4);
+            margin-top: 1px
+        }
+
+        .dt-right {
+            display: flex;
+            align-items: center;
+            gap: 10px
+        }
+
+        .dt-demo {
+            font-size: .7rem;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 20px;
+            background: var(--orange-bg);
+            color: var(--orange);
+            border: 1px solid #F4C9A0
+        }
+
+        .dt-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--sui), var(--blue-dark));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .78rem;
+            font-weight: 700;
+            color: #fff
+        }
+
+        /* Main */
+        .dash-main {
+            flex: 1;
+            overflow-y: auto;
+            background: var(--cream);
+            display: flex;
+            flex-direction: column
+        }
+
+        /* Panels */
+        .dpanel {
+            display: none;
+            flex: 1
+        }
+
+        .dpanel.active {
+            display: flex;
+            flex-direction: column
+        }
+
+        /* Stats bar */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: .9rem;
+            padding: 1.25rem 1.75rem;
+            flex-shrink: 0
+        }
+
+        .stat-box {
+            background: var(--white);
+            border: 1px solid var(--cream-border);
+            border-radius: 8px;
+            padding: 1.1rem 1.25rem
+        }
+
+        .stat-box-lbl {
+            font-size: .68rem;
+            color: var(--ink-4);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            margin-bottom: .4rem
+        }
+
+        .stat-box-val {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.75rem;
+            font-weight: 700;
+            line-height: 1
+        }
+
+        .stat-box-sub {
+            font-size: .68rem;
+            color: var(--ink-4);
+            margin-top: 3px
+        }
+
+        .stat-box-sub.ok {
+            color: var(--green)
+        }
+
+        .stat-box-sub.warn {
+            color: var(--orange)
+        }
+
+        /* Editor area */
+        .editor-section {
+            padding: 0 1.75rem 1.75rem;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem
+        }
+
+        .editor-card {
+            background: var(--white);
+            border: 1px solid var(--cream-border);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: var(--sh-sm);
+            display: flex;
+            flex-direction: column
+        }
+
+        .editor-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 9px 14px;
+            border-bottom: 1px solid var(--cream-border);
+            background: var(--cream-mid);
+            flex-shrink: 0
+        }
+
+        .etb-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap
+        }
+
+        .etb-sid {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: .68rem;
+            color: var(--ink-4)
+        }
+
+        .etb-wc {
+            font-size: .78rem;
+            color: var(--ink-3);
+            font-weight: 500
+        }
+
+        .ticker {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: .74rem;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 20px
+        }
+
+        .tk-idle {
+            background: var(--blue-light);
+            color: var(--blue)
+        }
+
+        .tk-saving {
+            background: var(--orange-bg);
+            color: var(--orange)
+        }
+
+        .tk-saved {
+            background: var(--green-bg);
+            color: var(--green)
+        }
+
+        .tk-error {
+            background: var(--red-bg);
+            color: var(--red)
+        }
+
+        .tk-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            background: currentColor
+        }
+
+        .tk-saving .tk-dot {
+            animation: pulse 1s ease-in-out infinite
+        }
+
+        .etb-right {
+            display: flex;
+            align-items: center;
+            gap: 8px
+        }
+
+        .etb-cp-badge {
+            font-size: .7rem;
+            color: var(--ink-3);
+            padding: 3px 10px;
+            border: 1px solid var(--cream-border);
+            border-radius: 20px;
+            white-space: nowrap
+        }
+
+        .btn-proof {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            background: var(--ink);
+            color: #fff;
+            font-size: .78rem;
+            font-weight: 700;
+            padding: 7px 16px;
+            border-radius: 6px;
+            transition: background .2s
+        }
+
+        .btn-proof:hover:not(:disabled) {
+            background: var(--blue)
+        }
+
+        .btn-proof:disabled {
+            opacity: .35;
+            cursor: not-allowed
+        }
+
+        .btn-proof.loading {
+            background: var(--blue)
+        }
+
+        .dash-textarea {
+            flex: 1;
+            width: 100%;
+            padding: 1.75rem 2.25rem;
+            font-family: 'Playfair Display', serif;
+            font-size: 1.05rem;
+            line-height: 1.86;
+            color: var(--ink);
+            background: var(--white);
+            resize: none;
+            outline: none;
+            border: none;
+            min-height: 280px
+        }
+
+        .dash-textarea::placeholder {
+            color: var(--ink-4);
+            font-style: italic
+        }
+
+        /* Agent insights */
+        .agent-card {
+            background: var(--white);
+            border: 1px solid var(--blue-mid);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: var(--sh-sm)
+        }
+
+        .agent-head {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: .85rem 1.25rem;
+            border-bottom: 1px solid var(--cream-border);
+            background: var(--blue-light)
+        }
+
+        .agent-head-title {
+            font-size: .82rem;
+            font-weight: 700;
+            color: var(--blue-dark);
+            flex: 1
+        }
+
+        .agent-badge {
+            font-size: .65rem;
+            font-weight: 700;
+            background: var(--blue);
+            color: #fff;
+            padding: 2px 8px;
+            border-radius: 20px
+        }
+
+        .agent-empty {
+            padding: 1.25rem;
+            text-align: center
+        }
+
+        .agent-empty p {
+            font-size: .8rem;
+            color: var(--ink-4);
+            line-height: 1.65
+        }
+
+        .agent-insights {
+            padding: 1rem 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: .6rem
+        }
+
+        .agent-insight {
+            background: var(--blue-light);
+            border-left: 3px solid var(--blue);
+            border-radius: 0 6px 6px 0;
+            padding: .6rem .9rem;
+            font-size: .8rem;
+            color: var(--ink-2);
+            line-height: 1.55;
+            animation: slideIn .3s ease
+        }
+
+        .agent-analyzing {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 1rem 1.25rem;
+            font-size: .8rem;
+            color: var(--blue)
+        }
+
+        /* Checkpoint log */
+        .cp-log-card {
+            background: var(--white);
+            border: 1px solid var(--cream-border);
+            border-radius: 10px;
+            overflow: hidden
+        }
+
+        .cp-log-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: .85rem 1.25rem;
+            border-bottom: 1px solid var(--cream-border)
+        }
+
+        .cp-log-title {
+            font-size: .82rem;
+            font-weight: 700
+        }
+
+        .cp-log-meta {
+            font-size: .7rem;
+            color: var(--ink-4)
+        }
+
+        .cp-empty {
+            padding: 1.75rem;
+            text-align: center
+        }
+
+        .cp-empty p {
+            font-size: .82rem;
+            color: var(--ink-4);
+            line-height: 1.65
+        }
+
+        .cp-list {
+            max-height: 240px;
+            overflow-y: auto
+        }
+
+        .cp-item {
+            display: flex;
+            align-items: center;
+            gap: .9rem;
+            padding: .75rem 1.25rem;
+            border-bottom: 1px solid var(--cream-border);
+            animation: slideIn .3s ease
+        }
+
+        .cp-item:last-child {
+            border-bottom: none
+        }
+
+        .cp-num {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--green-bg);
+            font-size: .7rem;
+            font-weight: 700;
+            color: var(--green);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0
+        }
+
+        .cp-main {
+            flex: 1;
+            min-width: 0
+        }
+
+        .cp-time {
+            font-size: .7rem;
+            color: var(--ink-4);
+            margin-bottom: 1px
+        }
+
+        .cp-blob {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: .68rem;
+            color: var(--blue);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            cursor: pointer
+        }
+
+        .cp-blob:hover {
+            text-decoration: underline
+        }
+
+        .cp-wc {
+            font-size: .7rem;
+            color: var(--ink-3);
+            flex-shrink: 0;
+            text-align: right
+        }
+
+        .cp-delta {
+            color: var(--green);
+            font-weight: 700
+        }
+
+        /* Sessions panel */
+        .sessions-wrap {
+            padding: 1.5rem 1.75rem
+        }
+
+        .panel-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem
+        }
+
+        .ph-title {
+            font-size: .85rem;
+            font-weight: 700
+        }
+
+        .ph-sub {
+            font-size: .72rem;
+            color: var(--ink-4);
+            margin-top: 1px
+        }
+
+        .sess-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+            gap: 1rem
+        }
+
+        .sess-card {
+            background: var(--white);
+            border: 1px solid var(--cream-border);
+            border-radius: 10px;
+            padding: 1.1rem 1.25rem;
+            transition: box-shadow .2s, transform .2s
+        }
+
+        .sess-card:hover {
+            box-shadow: var(--sh-md);
+            transform: translateY(-1px)
+        }
+
+        .sc-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: .5rem;
+            margin-bottom: .5rem
+        }
+
+        .sc-title {
+            font-size: .9rem;
+            font-weight: 700;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 180px
+        }
+
+        .sc-proof-pill {
+            font-size: .63rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 20px;
+            background: var(--green-bg);
+            color: var(--green);
+            flex-shrink: 0
+        }
+
+        .sc-meta {
+            font-size: .73rem;
+            color: var(--ink-4);
+            line-height: 1.65
+        }
+
+        .sc-acts {
+            display: flex;
+            gap: .5rem;
+            margin-top: .75rem
+        }
+
+        .sc-act {
+            font-size: .73rem;
+            font-weight: 500;
+            padding: 5px 12px;
+            border-radius: 5px;
+            border: 1px solid var(--cream-border);
+            color: var(--ink-3);
+            transition: all .15s;
+            flex: 1;
+            text-align: center
+        }
+
+        .sc-act:hover {
+            border-color: var(--blue);
+            color: var(--blue)
+        }
+
+        .sc-act.prim {
+            background: var(--ink);
+            color: #fff;
+            border-color: var(--ink)
+        }
+
+        .sc-act.prim:hover {
+            background: var(--blue);
+            border-color: var(--blue)
+        }
+
+        /* Proofs panel */
+        .proof-card {
+            background: var(--white);
+            border: 1px solid var(--cream-border);
+            border-radius: 10px;
+            padding: 1.1rem 1.25rem;
+            margin-bottom: .9rem;
+            transition: box-shadow .2s
+        }
+
+        .proof-card:hover {
+            box-shadow: var(--sh-md)
+        }
+
+        .pc-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: .4rem
+        }
+
+        .pc-title {
+            font-size: .88rem;
+            font-weight: 700
+        }
+
+        .pc-time {
+            font-size: .72rem;
+            color: var(--ink-4)
+        }
+
+        .pc-url {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: .68rem;
+            color: var(--blue);
+            word-break: break-all;
+            line-height: 1.55;
+            margin-bottom: .7rem
+        }
+
+        .pc-acts {
+            display: flex;
+            gap: .5rem
+        }
+
+        .pc-act {
+            font-size: .72rem;
+            font-weight: 500;
+            padding: 5px 12px;
+            border-radius: 5px;
+            border: 1px solid var(--cream-border);
+            color: var(--ink-3);
+            transition: all .15s
+        }
+
+        .pc-act:hover {
+            border-color: var(--blue);
+            color: var(--blue)
+        }
+
+        .pc-act.prim {
+            background: var(--ink);
+            color: #fff;
+            border-color: var(--ink)
+        }
+
+        .pc-act.prim:hover {
+            background: var(--blue);
+            border-color: var(--blue)
+        }
+
+        /* Wallet panel */
+        .wallet-wrap {
+            padding: 1.5rem 1.75rem
+        }
+
+        .winfo-card {
+            background: var(--white);
+            border: 1px solid var(--cream-border);
+            border-radius: 12px;
+            overflow: hidden;
+            max-width: 560px
+        }
+
+        .wic-head {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--cream-border);
+            display: flex;
+            align-items: center;
+            gap: 1rem
+        }
+
+        .wic-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--sui), var(--blue-dark));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            flex-shrink: 0
+        }
+
+        .wic-addr {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: .82rem;
+            font-weight: 600;
+            margin-bottom: 2px
+        }
+
+        .wic-net {
+            font-size: .75rem;
+            color: var(--ink-4)
+        }
+
+        .wic-connected {
+            margin-left: auto;
+            font-size: .7rem;
+            font-weight: 700;
+            padding: 4px 12px;
+            border-radius: 20px;
+            background: var(--green-bg);
+            color: var(--green);
+            border: 1px solid var(--green-border)
+        }
+
+        .wic-rows {
+            padding: .5rem 0
+        }
+
+        .wic-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: .75rem 1.5rem;
+            border-bottom: 1px solid var(--cream-border);
+            font-size: .8rem
+        }
+
+        .wic-row:last-child {
+            border-bottom: none
+        }
+
+        .wic-row-lbl {
+            color: var(--ink-3)
+        }
+
+        .wic-row-val {
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace
+        }
+
+        .wic-row-val.blue {
+            color: var(--blue)
+        }
+
+        .wic-row-val.green {
+            color: var(--green)
+        }
+
+        .wic-foot {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--cream-border);
+            display: flex;
+            gap: .75rem
+        }
+
+        .wic-btn {
+            flex: 1;
+            font-size: .8rem;
+            font-weight: 500;
+            padding: 9px;
+            border-radius: 7px;
+            border: 1px solid var(--cream-border);
+            color: var(--ink-3);
+            transition: all .15s
+        }
+
+        .wic-btn:hover {
+            border-color: var(--blue);
+            color: var(--blue)
+        }
+
+        .wic-btn.danger {
+            border-color: #F4A8A8;
+            color: var(--red)
+        }
+
+        .wic-btn.danger:hover {
+            background: var(--red-bg)
+        }
+
+        /* Empty state */
+        .empty-state {
+            background: var(--white);
+            border: 1px dashed var(--cream-border);
+            border-radius: 10px;
+            padding: 2.5rem;
+            text-align: center
+        }
+
+        .empty-state p {
+            font-size: .85rem;
+            color: var(--ink-4);
+            line-height: 1.7
+        }
+
+        /* ══════════════════════════════════════════════════
+   PROOF MODAL
+══════════════════════════════════════════════════ */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(26, 26, 46, .65);
+            backdrop-filter: blur(6px);
+            z-index: 300;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .22s
+        }
+
+        .modal-backdrop.open {
+            opacity: 1;
+            pointer-events: all
+        }
+
+        .modal-box {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 2.5rem;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: var(--sh-xl);
+            transform: scale(.96) translateY(8px);
+            transition: transform .25s;
+            position: relative
+        }
+
+        .modal-backdrop.open .modal-box {
+            transform: scale(1) translateY(0)
+        }
+
+        .modal-x {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--cream);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .85rem;
+            color: var(--ink-3);
+            transition: background .15s
+        }
+
+        .modal-x:hover {
+            background: var(--cream-border)
+        }
+
+        .modal-icon {
+            width: 54px;
+            height: 54px;
+            background: var(--green-bg);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.25rem;
+            font-size: 1.5rem
+        }
+
+        .modal-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.55rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: .5rem
+        }
+
+        .modal-sub {
+            font-size: .84rem;
+            color: var(--ink-3);
+            text-align: center;
+            line-height: 1.6;
+            margin-bottom: 1.25rem
+        }
+
+        .modal-sum {
+            display: flex;
+            gap: .75rem;
+            margin-bottom: 1.25rem
+        }
+
+        .ms-item {
+            flex: 1;
+            background: var(--cream);
+            border-radius: 7px;
+            padding: .65rem .85rem;
+            text-align: center
+        }
+
+        .ms-val {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.4rem;
+            font-weight: 700
+        }
+
+        .ms-lbl {
+            font-size: .65rem;
+            color: var(--ink-4)
+        }
+
+        .modal-url-lbl {
+            font-size: .68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            color: var(--ink-4);
+            margin-bottom: .45rem
+        }
+
+        .modal-url {
+            background: var(--cream);
+            border: 1px solid var(--cream-border);
+            border-radius: 8px;
+            padding: .85rem 1rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: .7rem;
+            color: var(--blue);
+            word-break: break-all;
+            line-height: 1.6;
+            margin-bottom: 1.25rem
+        }
+
+        .modal-acts {
+            display: flex;
+            gap: .7rem
+        }
+
+        .modal-copy {
+            flex: 1;
+            background: var(--ink);
+            color: #fff;
+            font-size: .85rem;
+            font-weight: 700;
+            padding: 11px;
+            border-radius: 7px;
+            transition: background .2s
+        }
+
+        .modal-copy:hover {
+            background: var(--blue)
+        }
+
+        .modal-open {
+            flex: 1;
+            border: 1px solid var(--cream-border);
+            color: var(--ink-2);
+            font-size: .85rem;
+            font-weight: 500;
+            padding: 11px;
+            border-radius: 7px;
+            transition: all .2s;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px
+        }
+
+        .modal-open:hover {
+            border-color: var(--blue-mid)
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 1.25rem;
+            right: 1.25rem;
+            z-index: 400;
+            background: var(--ink);
+            color: #fff;
+            font-size: .82rem;
+            font-weight: 500;
+            padding: 10px 18px;
+            border-radius: 8px;
+            box-shadow: var(--sh-lg);
+            transform: translateY(20px);
+            opacity: 0;
+            transition: all .25s;
+            pointer-events: none
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1
+        }
+
+        .toast.ok {
+            background: var(--green)
+        }
+
+        .toast.err {
+            background: var(--red)
+        }
+
+        /* Buttons shared */
+        .btn-small {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: .78rem;
+            font-weight: 600;
+            padding: 7px 14px;
+            border-radius: 6px;
+            border: 1px solid var(--cream-border);
+            color: var(--ink-3);
+            transition: all .15s
+        }
+
+        .btn-small:hover {
+            border-color: var(--blue);
+            color: var(--blue);
+            background: var(--blue-light)
+        }
+
+        .btn-small.dark {
+            background: var(--ink);
+            color: #fff;
+            border-color: var(--ink)
+        }
+
+        .btn-small.dark:hover {
+            background: var(--blue);
+            border-color: var(--blue)
+        }
+
+        /* Spinner */
+        .spinner {
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255, 255, 255, .3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin .7s linear infinite;
+            display: inline-block
+        }
+
+        .spinner-blue {
+            border-color: var(--blue-mid);
+            border-top-color: var(--blue)
+        }
+
+        /* ══════════════════════════════════════════════════
+   ANIMATIONS
+══════════════════════════════════════════════════ */
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1)
+            }
+
+            50% {
+                opacity: .5;
+                transform: scale(.78)
+            }
+        }
+
+        @keyframes blink {
+            50% {
+                opacity: 0
+            }
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg)
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-6px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        @keyframes scaleIn {
+            from {
+                transform: scale(.6);
+                opacity: 0
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1
+            }
+        }
+
+        /* ══════════════════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════════════════ */
+        @media(max-width:900px) {
+            .hero {
+                grid-template-columns: 1fr;
+                padding: 120px 1.25rem 3rem;
+                gap: 2.5rem
+            }
+
+            .hero-mockup {
+                display: none
+            }
+
+            .flow-grid {
+                grid-template-columns: repeat(2, 1fr)
+            }
+
+            .flow-grid::before {
+                display: none
+            }
+
+            .why-inner {
+                grid-template-columns: 1fr
+            }
+
+            .dsidebar {
+                display: none
+            }
+
+            .stats-bar {
+                grid-template-columns: repeat(2, 1fr)
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ═══════════════════════ LANDING ═══════════════════════ -->
+    <div id="page-landing" class="page active">
+
+        <nav class="lnav">
+            <div class="brand"><span class="pulse"></span><span class="brand-logo">Provenance</span></div>
+            <div class="lnav-links">
+                <a href="#flow">How it works</a>
+                <a href="#why">Why Walrus</a>
+                <button class="btn-connect-nav" onclick="goConnect()">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="7" width="20" height="14" rx="2" />
+                        <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
+                    </svg>
+                    Connect Wallet
+                </button>
+            </div>
+        </nav>
+
+        <section class="hero">
+            <div>
+                <div class="hero-tag"><span class="pulse"></span>Live on Walrus Testnet</div>
+                <h1 class="hero-h1">Your writing,<br><em>cryptographically proven.</em></h1>
+                <p class="hero-p">Provenance seals every draft milestone as a permanent Walrus blob, stores the ordered
+                    checkpoint chain in MemWal agent memory, and publishes a tamper-proof proof page — all anchored to
+                    your Sui wallet.</p>
+                <div class="hero-btns">
+                    <button class="btn-sui" onclick="goConnect()">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <rect x="2" y="7" width="20" height="14" rx="2" />
+                            <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
+                        </svg>
+                        Connect Wallet to Start
+                    </button>
+                    <a href="#flow" class="btn-outline">See the flow</a>
+                </div>
+                <div class="hero-stats">
+                    <div>
+                        <div class="hs-val">∞</div>
+                        <div class="hs-lbl">Proof lifetime</div>
+                    </div>
+                    <div>
+                        <div class="hs-val">15s</div>
+                        <div class="hs-lbl">Demo seal cadence</div>
+                    </div>
+                    <div>
+                        <div class="hs-val">0</div>
+                        <div class="hs-lbl">Middlemen needed</div>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-mockup">
+                <div class="mock-bar">
+                    <div class="mac"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+                    <div class="mock-url">provenance.app/editor — session_a7k2m</div>
+                </div>
+                <div class="mock-body">
+                    <div class="mock-wallet"><span class="pulse"></span>0x7a23...b9c1 · Sui Testnet</div>
+                    <div class="mock-ticker"><span class="pulse"></span>Next seal in 38s · Demo mode</div>
+                    <div class="mock-text" id="hero-type">In a world where AI generates text effortlessly, the process
+                        is the proof<span class="mock-cursor"></span></div>
+                    <div class="mock-cps">
+                        <div class="mock-cps-lbl">Sealed checkpoints</div>
+                        <div class="mock-cp-row"><span class="cdot"></span>#1 · 09:14:02<span
+                                class="cbid">M4hsZGQ1oC...</span></div>
+                        <div class="mock-cp-row"><span class="cdot"></span>#2 · 09:14:17<span
+                                class="cbid">oehkoh0352...</span></div>
+                        <div class="mock-cp-row"><span class="cdot"></span>#3 · 09:14:32<span
+                                class="cbid">x7P4mS9kQa...</span></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="flow-sec" id="flow">
+            <div class="flow-inner">
+                <div class="sec-ey">User Flow</div>
+                <h2 class="sec-h2">From blank page to permanent proof.</h2>
+                <p class="sec-sub">Connect your Sui wallet once — then write. The agent memory layer handles everything
+                    else.</p>
+                <div class="flow-grid">
+                    <div class="flow-step hi">
+                        <div class="fs-num">1</div>
+                        <div class="fs-title">Connect Sui Wallet</div>
+                        <p class="fs-desc">Your wallet address anchors the writing session to a verifiable on-chain
+                            identity.</p>
+                    </div>
+                    <div class="flow-step">
+                        <div class="fs-num">2</div>
+                        <div class="fs-title">Write Normally</div>
+                        <p class="fs-desc">Every 60 seconds, a checkpoint is SHA-256 hashed and sealed as a permanent
+                            Walrus blob.</p>
+                    </div>
+                    <div class="flow-step">
+                        <div class="fs-num">3</div>
+                        <div class="fs-title">Agent Analyzes</div>
+                        <p class="fs-desc">An AI writing agent reads your draft history from MemWal and surfaces
+                            insights about your process.</p>
+                    </div>
+                    <div class="flow-step">
+                        <div class="fs-num">4</div>
+                        <div class="fs-title">Generate Proof</div>
+                        <p class="fs-desc">MemWal recalls the full checkpoint chain. A permanent proof page is published
+                            to Walrus and shared.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="why-sec" id="why">
+            <div class="why-inner">
+                <div>
+                    <div class="why-lbl">Why it's unforgeable</div>
+                    <h2 class="why-h2">The proof is the artifact, not a screenshot.</h2>
+                    <p class="why-p">Walrus blob IDs are content-addressed. MemWal stores the ordered chain. The proof
+                        page is itself a permanent Walrus blob. A different draft produces a different blob ID — always.
+                    </p>
+                </div>
+                <div class="why-pts">
+                    <div class="why-pt">
+                        <div class="why-pt-ico">🔐</div>
+                        <div>
+                            <div class="why-pt-title">Content-addressed blobs</div>
+                            <p class="why-pt-desc">Blob IDs are derived from content via SHA-256. You cannot upload a
+                                different checkpoint and get the same ID.</p>
+                        </div>
+                    </div>
+                    <div class="why-pt">
+                        <div class="why-pt-ico">🧠</div>
+                        <div>
+                            <div class="why-pt-title">MemWal agent memory</div>
+                            <p class="why-pt-desc">MemWal stores the ordered blob ID chain with timestamps in a
+                                namespace the user cannot rewrite.</p>
+                        </div>
+                    </div>
+                    <div class="why-pt">
+                        <div class="why-pt-ico">🪪</div>
+                        <div>
+                            <div class="why-pt-title">Wallet-anchored identity</div>
+                            <p class="why-pt-desc">Your Sui wallet address ties every checkpoint to a cryptographic
+                                author identity — not an email.</p>
+                        </div>
+                    </div>
+                    <div class="why-pt">
+                        <div class="why-pt-ico">♾️</div>
+                        <div>
+                            <div class="why-pt-title">Proof page is a blob</div>
+                            <p class="why-pt-desc">The proof HTML is itself a permanent Walrus blob. Its URL is its
+                                content address — read-only forever.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="land-footer">
+            <div class="lf-inner">
+                <div class="brand"><span class="pulse"></span><strong
+                        style="font-family:'Playfair Display',serif">Provenance</strong></div>
+                <div class="lf-links">
+                    <a href="https://docs.wal.app" target="_blank">Walrus Docs</a>
+                    <a href="https://docs.wal.app/walrus-memory/sdk/quick-start" target="_blank">MemWal SDK</a>
+                    <a href="https://sui.io" target="_blank">Sui Network</a>
+                    <a href="https://github.com/SumitRaikwar18/Provenance" target="_blank">GitHub</a>
+                </div>
+                <div class="lf-built">Built on <a href="https://walrus.xyz" target="_blank">Walrus</a> · Sui Overflow
+                    2026</div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ═══════════════════════ CONNECT ═══════════════════════ -->
+    <div id="page-connect" class="page">
+        <div class="connect-card">
+            <div class="connect-back" onclick="goLanding()">← Back to home</div>
+            <div class="connect-brand"><span class="pulse"></span>Provenance</div>
+
+            <div id="connect-default">
+                <h2 class="connect-h2">Connect your wallet</h2>
+                <p class="connect-p">Connect a Sui wallet to anchor your authorship identity before writing begins.</p>
+                <div class="wallet-opts">
+                    <button class="wallet-btn" id="wbtn-slush"
+                        onclick="connectWallet('Slush Wallet','0x7a23b9c14f3e8d2a1c5f6b9e0a3d7c2e1f8b4a9c')">
+                        <div class="wi-icon">🐬</div>
+                        <div>
+                            <div class="wi-name">Slush Wallet</div>
+                            <div class="wi-desc">Official Mysten Labs wallet</div>
+                        </div>
+                        <span class="wi-status wis-detecting" id="wtag-slush">Detecting...</span>
+                    </button>
+                    <button class="wallet-btn" id="wbtn-sui"
+                        onclick="connectWallet('Sui Wallet','0x3f8a9b2e1d7c4f5a6b8e3d2c1f9a0b7e4a6d2c1')">
+                        <div class="wi-icon">💧</div>
+                        <div>
+                            <div class="wi-name">Sui Wallet</div>
+                            <div class="wi-desc">Community Sui wallet</div>
+                        </div>
+                        <span class="wi-status wis-detecting" id="wtag-sui">Detecting...</span>
+                    </button>
+                    <button class="wallet-btn" id="wbtn-martian" disabled>
+                        <div class="wi-icon">👾</div>
+                        <div>
+                            <div class="wi-name">Martian Wallet</div>
+                            <div class="wi-desc">Multi-chain Sui wallet</div>
+                        </div>
+                        <span class="wi-status wis-na">Not installed</span>
+                    </button>
+                </div>
+                <div class="connect-divider"><span>or try without extension</span></div>
+                <button class="btn-demo"
+                    onclick="connectWallet('Demo Wallet','0xdemo4f5a6b8e3d2c1f9a0b7e4a6d2c1f9a0b7e')">Continue with Demo
+                    Wallet</button>
+                <p class="connect-note">No wallet? <a
+                        href="https://chromewebstore.google.com/detail/slush-a-sui-wallet/opcgpfmipidbgpenhmajoajpbobppdil"
+                        target="_blank">Install Slush →</a><br>No transactions are signed automatically. Your address is
+                    used for authorship anchoring only.</p>
+            </div>
+
+            <div class="cstate" id="conn-loading">
+                <div class="big-spinner"></div>
+                <div class="cstate-label" id="conn-label">Connecting...</div>
+                <div class="cstate-sub">Approve the connection request in your wallet</div>
+            </div>
+
+            <div class="cstate" id="conn-success">
+                <div class="connected-check">✓</div>
+                <div class="cstate-label">Wallet Connected!</div>
+                <div class="connected-addr" id="conn-addr">0x7a23...b9c1</div>
+                <div class="connected-net">Sui Testnet · Provenance</div>
+                <button class="btn-enter" onclick="goDashboard()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7" />
+                        <rect x="14" y="3" width="7" height="7" />
+                        <rect x="14" y="14" width="7" height="7" />
+                        <rect x="3" y="14" width="7" height="7" />
+                    </svg>
+                    Open Dashboard →
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ═══════════════════════ DASHBOARD ═══════════════════════ -->
+    <div id="page-dashboard" class="page">
+        <div class="dash-shell">
+
+            <!-- Sidebar -->
+            <aside class="dsidebar">
+                <div class="dsb-head">
+                    <div class="brand"><span class="pulse"></span><span class="dsb-brand">Provenance</span></div>
+                    <button class="dsb-newbtn" title="New session" onclick="newSession()">+</button>
+                </div>
+                <div class="dsb-wallet">
+                    <div class="dsb-wdot"></div>
+                    <div>
+                        <div class="dsb-waddr" id="sb-addr">0x7a23...b9c1</div>
+                        <div class="dsb-wnet">Sui Testnet</div>
+                    </div>
+                    <div class="dsb-wdiscon" onclick="disconnect()">Disconnect</div>
+                </div>
+                <nav class="dsb-nav">
+                    <div class="dsb-sec-lbl">Workspace</div>
+                    <button class="dsb-navbtn active" onclick="switchPanel('editor',this)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 20h9" />
+                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                        </svg>
+                        Editor <span class="dsb-count" id="nav-editor-cnt">0 cp</span>
+                    </button>
+                    <button class="dsb-navbtn" onclick="switchPanel('sessions',this)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                            <polyline points="14 2 14 8 20 8" />
+                        </svg>
+                        Sessions <span class="dsb-count" id="nav-sess-cnt">0</span>
+                    </button>
+                    <button class="dsb-navbtn" onclick="switchPanel('proofs',this)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 12l2 2 4-4" />
+                            <circle cx="12" cy="12" r="10" />
+                        </svg>
+                        Proofs <span class="dsb-count" id="nav-proof-cnt">0</span>
+                    </button>
+                    <div class="dsb-sec-lbl">Account</div>
+                    <button class="dsb-navbtn" onclick="switchPanel('wallet',this)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="7" width="20" height="14" rx="2" />
+                            <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
+                        </svg>
+                        Wallet Info
+                    </button>
+                    <button class="dsb-navbtn" onclick="goLanding()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                        </svg>
+                        Home
+                    </button>
+                </nav>
+                <div class="dsb-bottom">
+                    <div class="walrus-chip">
+                        <div class="wc-dot"></div>
+                        <div class="wc-txt">Walrus Testnet</div>
+                        <div class="wc-net">Live</div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Main -->
+            <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+                <div class="dash-topbar">
+                    <div class="dt-left">
+                        <div class="dt-title" id="dt-title">Editor</div>
+                        <div class="dt-session" id="dt-session">session_—</div>
+                    </div>
+                    <div class="dt-right">
+                        <span class="dt-demo">Demo Mode · 15s seal</span>
+                        <div class="dt-avatar" id="dt-avatar">P</div>
+                    </div>
+                </div>
+
+                <div class="dash-main">
+
+                    <!-- EDITOR PANEL -->
+                    <div class="dpanel active" id="panel-editor">
+                        <div class="stats-bar">
+                            <div class="stat-box">
+                                <div class="stat-box-lbl">Words</div>
+                                <div class="stat-box-val" id="sb-words">0</div>
+                                <div class="stat-box-sub">current draft</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-box-lbl">Checkpoints</div>
+                                <div class="stat-box-val" id="sb-cps">0</div>
+                                <div class="stat-box-sub ok" id="sb-cps-sub">none sealed yet</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-box-lbl">Next Seal</div>
+                                <div class="stat-box-val" id="sb-next">15s</div>
+                                <div class="stat-box-sub warn">demo interval</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-box-lbl">Wallet</div>
+                                <div class="stat-box-val" style="font-size:1rem;font-family:'JetBrains Mono',monospace"
+                                    id="sb-wallet">—</div>
+                                <div class="stat-box-sub ok">Connected · Testnet</div>
+                            </div>
+                        </div>
+
+                        <div class="editor-section">
+                            <div class="editor-card">
+                                <div class="editor-toolbar">
+                                    <div class="etb-left">
+                                        <span class="etb-sid" id="etb-sid">session_—</span>
+                                        <span class="etb-wc"><span id="etb-wc">0</span> words</span>
+                                        <div class="ticker tk-idle" id="etb-ticker"><span class="tk-dot"></span><span
+                                                id="ticker-txt">Next seal in 15s</span></div>
+                                    </div>
+                                    <div class="etb-right">
+                                        <span class="etb-cp-badge"><span id="etb-cp-cnt">0</span> checkpoints</span>
+                                        <button class="btn-proof" id="proof-btn" disabled onclick="generateProof()">
+                                            <span id="proof-btn-txt">Generate Proof</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <textarea class="dash-textarea" id="main-editor"
+                                    placeholder="Start writing. Your process is being sealed on Walrus every 15 seconds (demo mode)..."
+                                    oninput="onType(this.value)"></textarea>
+                            </div>
+
+                            <!-- Agent Insights -->
+                            <div class="agent-card">
+                                <div class="agent-head">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2" style="color:var(--blue-dark)">
+                                        <circle cx="12" cy="12" r="10" />
+                                        <path d="M12 16v-4M12 8h.01" />
+                                    </svg>
+                                    <div class="agent-head-title">AI Writing Agent</div>
+                                    <span class="agent-badge">MemWal powered</span>
+                                </div>
+                                <div id="agent-body">
+                                    <div class="agent-empty">
+                                        <p>The writing agent will analyze your draft history<br>after your second
+                                            checkpoint is sealed.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Checkpoint Log -->
+                            <div class="cp-log-card">
+                                <div class="cp-log-head">
+                                    <div class="cp-log-title">Checkpoint Chain</div>
+                                    <div class="cp-log-meta" id="cp-log-meta">Each entry is a permanent Walrus blob
+                                    </div>
+                                </div>
+                                <div id="cp-empty" class="cp-empty">
+                                    <p>No checkpoints yet.<br>Start typing — your first seal fires in 15 seconds.</p>
+                                </div>
+                                <div id="cp-list" class="cp-list" style="display:none"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SESSIONS PANEL -->
+                    <div class="dpanel" id="panel-sessions">
+                        <div class="sessions-wrap">
+                            <div class="panel-head">
+                                <div>
+                                    <div class="ph-title">Sessions</div>
+                                    <div class="ph-sub">All writing sessions from your wallet</div>
+                                </div>
+                                <button class="btn-small dark"
+                                    onclick="newSession();switchPanel('editor',document.querySelector('.dsb-navbtn'))">+
+                                    New Session</button>
+                            </div>
+                            <div class="sess-grid" id="sess-grid">
+                                <div class="empty-state">
+                                    <p>No sessions yet. Start writing to create your first session.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PROOFS PANEL -->
+                    <div class="dpanel" id="panel-proofs">
+                        <div class="sessions-wrap">
+                            <div class="panel-head">
+                                <div>
+                                    <div class="ph-title">Generated Proofs</div>
+                                    <div class="ph-sub">Permanent Walrus proof pages</div>
+                                </div>
+                            </div>
+                            <div id="proofs-list">
+                                <div class="empty-state">
+                                    <p>No proofs yet.<br>Write something and click "Generate Proof" to create your first
+                                        verifiable authorship certificate.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- WALLET PANEL -->
+                    <div class="dpanel" id="panel-wallet">
+                        <div class="wallet-wrap">
+                            <div class="panel-head">
+                                <div>
+                                    <div class="ph-title">Wallet Info</div>
+                                    <div class="ph-sub">Your connected Sui wallet</div>
+                                </div>
+                            </div>
+                            <div class="winfo-card">
+                                <div class="wic-head">
+                                    <div class="wic-avatar">🌊</div>
+                                    <div>
+                                        <div class="wic-addr" id="wic-addr">—</div>
+                                        <div class="wic-net" id="wic-wname">Sui Testnet</div>
+                                    </div>
+                                    <div class="wic-connected">● Connected</div>
+                                </div>
+                                <div class="wic-rows">
+                                    <div class="wic-row">
+                                        <div class="wic-row-lbl">Wallet</div>
+                                        <div class="wic-row-val" id="wic-wtype">—</div>
+                                    </div>
+                                    <div class="wic-row">
+                                        <div class="wic-row-lbl">Network</div>
+                                        <div class="wic-row-val green">Sui Testnet</div>
+                                    </div>
+                                    <div class="wic-row">
+                                        <div class="wic-row-lbl">Sessions</div>
+                                        <div class="wic-row-val" id="wic-sess-cnt">0</div>
+                                    </div>
+                                    <div class="wic-row">
+                                        <div class="wic-row-lbl">Proofs</div>
+                                        <div class="wic-row-val" id="wic-proof-cnt">0</div>
+                                    </div>
+                                    <div class="wic-row">
+                                        <div class="wic-row-lbl">Walrus Network</div>
+                                        <div class="wic-row-val blue">Testnet · aggregator.walrus-testnet.walrus.space
+                                        </div>
+                                    </div>
+                                    <div class="wic-row">
+                                        <div class="wic-row-lbl">MemWal Relayer</div>
+                                        <div class="wic-row-val blue">relayer.memory.walrus.xyz</div>
+                                    </div>
+                                </div>
+                                <div class="wic-foot">
+                                    <button class="wic-btn" onclick="copyAddr()">Copy Address</button>
+                                    <button class="wic-btn"
+                                        onclick="window.open('https://suiexplorer.com','_blank')">Explorer</button>
+                                    <button class="wic-btn danger" onclick="disconnect()">Disconnect</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Proof Modal -->
+    <div class="modal-backdrop" id="proof-modal" onclick="closeModal(event)">
+        <div class="modal-box">
+            <button class="modal-x" onclick="closeProofModal()">✕</button>
+            <div class="modal-icon">✓</div>
+            <div class="modal-title">Proof Sealed on Walrus</div>
+            <p class="modal-sub" id="modal-sub">Your writing history is permanently sealed on Walrus.</p>
+            <div class="modal-sum">
+                <div class="ms-item">
+                    <div class="ms-val" id="modal-cps">0</div>
+                    <div class="ms-lbl">checkpoints</div>
+                </div>
+                <div class="ms-item">
+                    <div class="ms-val" id="modal-wds">0</div>
+                    <div class="ms-lbl">words</div>
+                </div>
+                <div class="ms-item">
+                    <div class="ms-val">∞</div>
+                    <div class="ms-lbl">lifetime</div>
+                </div>
+            </div>
+            <div class="modal-url-lbl">Permanent Walrus Proof URL</div>
+            <div class="modal-url" id="modal-url">—</div>
+            <div class="modal-acts">
+                <button class="modal-copy" id="modal-copy-btn" onclick="copyProofUrl()">Copy URL</button>
+                <button class="modal-open" onclick="openProofUrl()">Open Proof →</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+
+    <script>
+        /* ═══ CONSTANTS ════════════════════════════════════════════ */
+        const DEMO_MS = 15000;
+        const WALRUS_AGG = 'https://aggregator.walrus-testnet.walrus.space';
+
+        /* ═══ APP STATE ════════════════════════════════════════════ */
+        const APP = {
+            walletName: '', walletAddr: '',
+            sessionId: uid(8), content: '',
+            cpIndex: 0, checkpoints: [],
+            sessions: [], proofs: [],
+            nextIn: DEMO_MS / 1000,
+            saving: false, genProof: false,
+            currentProofUrl: null, agentInsights: [],
+        };
+
+        /* ═══ UTILS ════════════════════════════════════════════════ */
+        function uid(n) { const c = 'abcdefghijklmnopqrstuvwxyz0123456789'; return Array.from({ length: n }, () => c[Math.floor(Math.random() * c.length)]).join('') }
+        function fakeBlobId() { const c = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-'; return Array.from({ length: 43 }, () => c[Math.floor(Math.random() * c.length)]).join('') }
+        function countWords(t) { return t.trim() === '' ? 0 : t.trim().split(/\s+/).length }
+        function titleOf(t) { const l = t.trim().split('\n')[0]?.replace(/[#*`_]/g, '').trim() || ''; return l.slice(0, 55) + (l.length > 55 ? '...' : '') || 'Untitled' }
+        function fmtTime(iso) { return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) }
+        function fmtDate(iso) { return new Date(iso).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) }
+        function truncAddr(a) { return a.length > 14 ? `${a.slice(0, 6)}...${a.slice(-4)}` : a }
+        function sleep(ms) { return new Promise(r => setTimeout(r, ms)) }
+
+        /* ═══ TOAST ════════════════════════════════════════════════ */
+        function toast(msg, type = '') { const el = document.getElementById('toast'); el.textContent = msg; el.className = 'toast ' + (type === 'ok' ? 'ok' : type === 'err' ? 'err' : ''); setTimeout(() => el.classList.add('show'), 10); setTimeout(() => el.classList.remove('show'), 3200) }
+
+        /* ═══ PAGE NAV ═════════════════════════════════════════════ */
+        function goLanding() { setPage('page-landing') }
+        function goConnect() { setPage('page-connect'); detectWallets() }
+        function goDashboard() { setPage('page-dashboard'); initDash() }
+        function setPage(id) { document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); document.getElementById(id).classList.add('active') }
+
+        /* ═══ WALLET DETECTION ═════════════════════════════════════ */
+        function detectWallets() {
+            // Simulate detection — in real app: check window.slush, window.suiWallet
+            setTimeout(() => {
+                const t = document.getElementById('wtag-slush');
+                if (t) { t.className = 'wi-status wis-ready'; t.textContent = 'Ready' }
+            }, 700);
+            setTimeout(() => {
+                const t = document.getElementById('wtag-sui');
+                if (t) { t.className = 'wi-status wis-ready'; t.textContent = 'Ready' }
+            }, 1100);
+        }
+
+        /* ═══ WALLET CONNECT ═══════════════════════════════════════ */
+        async function connectWallet(name, addr) {
+            document.getElementById('connect-default').style.display = 'none';
+            const loading = document.getElementById('conn-loading');
+            loading.classList.add('show');
+            document.getElementById('conn-label').textContent = `Connecting to ${name}...`;
+            await sleep(1400 + Math.random() * 700);
+            APP.walletName = name; APP.walletAddr = addr;
+            loading.classList.remove('show');
+            document.getElementById('conn-success').classList.add('show');
+            document.getElementById('conn-addr').textContent = truncAddr(addr);
+            toast('✓ ' + name + ' connected', 'ok');
+        }
+
+        /* ═══ DASHBOARD INIT ═══════════════════════════════════════ */
+        function initDash() {
+            const a = APP.walletAddr;
+            document.getElementById('sb-addr').textContent = truncAddr(a);
+            document.getElementById('sb-wallet').textContent = truncAddr(a);
+            document.getElementById('wic-addr').textContent = a;
+            document.getElementById('wic-wname').textContent = APP.walletName + ' · Sui Testnet';
+            document.getElementById('wic-wtype').textContent = APP.walletName;
+            document.getElementById('dt-avatar').textContent = APP.walletName[0] || 'P';
+            document.getElementById('etb-sid').textContent = 'session_' + APP.sessionId;
+            document.getElementById('dt-session').textContent = 'session_' + APP.sessionId;
+            loadStorage(); updateNavCounts(); startTimers();
+        }
+
+        /* ═══ PANEL SWITCH ═════════════════════════════════════════ */
+        function switchPanel(name, btn) {
+            document.querySelectorAll('.dpanel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.dsb-navbtn').forEach(b => b.classList.remove('active'));
+            document.getElementById('panel-' + name).classList.add('active');
+            if (btn) btn.classList.add('active');
+            const titles = { editor: 'Editor', sessions: 'Sessions', proofs: 'Proofs', wallet: 'Wallet Info' };
+            document.getElementById('dt-title').textContent = titles[name] || name;
+            if (name === 'sessions') renderSessions();
+            if (name === 'proofs') renderProofs();
+            if (name === 'wallet') updateWalletPanel();
+        }
+
+        /* ═══ EDITOR ═══════════════════════════════════════════════ */
+        function onType(v) {
+            APP.content = v;
+            const wc = countWords(v);
+            document.getElementById('etb-wc').textContent = wc;
+            document.getElementById('sb-words').textContent = wc;
+        }
+
+        /* ═══ TIMERS ═══════════════════════════════════════════════ */
+        let autosaveT, countdownT;
+        function startTimers() {
+            clearInterval(autosaveT); clearInterval(countdownT);
+            autosaveT = setInterval(() => { sealCheckpoint(); APP.nextIn = DEMO_MS / 1000 }, DEMO_MS);
+            countdownT = setInterval(() => {
+                if (!APP.saving) { APP.nextIn = Math.max(0, APP.nextIn - 1); setTicker('idle', `Next seal in ${APP.nextIn}s`); document.getElementById('sb-next').textContent = APP.nextIn + 's' }
+            }, 1000);
+        }
+
+        /* ═══ TICKER ═══════════════════════════════════════════════ */
+        function setTicker(state, txt) {
+            const el = document.getElementById('etb-ticker');
+            const cls = { idle: 'ticker tk-idle', saving: 'ticker tk-saving', saved: 'ticker tk-saved', error: 'ticker tk-error' };
+            el.className = cls[state] || cls.idle;
+            el.innerHTML = `<span class="tk-dot"></span><span id="ticker-txt">${txt}</span>`;
+        }
+
+        /* ═══ SEAL CHECKPOINT (demo — calls real API in production) ═ */
+        async function sealCheckpoint() {
+            if (APP.content.trim() === '' || APP.saving) return;
+            APP.saving = true; setTicker('saving', 'Sealing on Walrus...');
+            await sleep(600 + Math.random() * 600);
+            const blobId = fakeBlobId();
+            const timestamp = new Date().toISOString();
+            const wc = countWords(APP.content);
+            const cp = { blobId, timestamp, wordCount: wc, index: APP.cpIndex };
+            APP.checkpoints.push(cp); APP.cpIndex++;
+            renderCpItem(cp);
+            document.getElementById('sb-cps').textContent = APP.checkpoints.length;
+            document.getElementById('sb-cps-sub').textContent = 'last: ' + fmtTime(timestamp);
+            document.getElementById('etb-cp-cnt').textContent = APP.checkpoints.length;
+            document.getElementById('nav-editor-cnt').textContent = APP.checkpoints.length + ' cp';
+            document.getElementById('proof-btn').disabled = false;
+            setTicker('saved', '✓ Sealed · ' + blobId.slice(0, 10) + '...');
+            toast('Checkpoint #' + APP.checkpoints.length + ' sealed on Walrus', 'ok');
+            saveSession();
+            // Run agent analysis after 2+ checkpoints
+            if (APP.checkpoints.length >= 2) runAgentAnalysis();
+            APP.saving = false; APP.nextIn = DEMO_MS / 1000;
+            setTimeout(() => { if (!APP.saving) setTicker('idle', `Next seal in ${APP.nextIn}s`) }, 3000);
+        }
+
+        /* ═══ AGENT ANALYSIS (simulates LLM + MemWal recall) ════════ */
+        async function runAgentAnalysis() {
+            const body = document.getElementById('agent-body');
+            body.innerHTML = `<div class="agent-analyzing"><div class="spinner spinner-blue"></div>Agent analyzing checkpoint history via MemWal...</div>`;
+            await sleep(1800 + Math.random() * 1200);
+            const wc = countWords(APP.content);
+            const cps = APP.checkpoints.length;
+            const avgWords = Math.round(wc / cps);
+            const insights = [
+                `Writing velocity: ~${avgWords} words per checkpoint (${cps} checkpoints sealed)`,
+                `Session duration: ${fmtTime(APP.checkpoints[0].timestamp)} → now, ${Math.round((Date.now() - new Date(APP.checkpoints[0].timestamp).getTime()) / 60000)} minutes of tracked writing`,
+                wc > 100 ? `Content depth: Draft has reached ${wc} words — approaching paragraph-level substance` : `Content building: ${wc} words so far, keep going to unlock deeper analysis`,
+                `Provenance chain: ${cps} SHA-256 hashed blobs anchored in MemWal namespace provenance:${APP.sessionId}`,
+                `All checkpoints retrievable via MemWal recall() with query: "all checkpoints for session ${APP.sessionId}"`,
+            ];
+            APP.agentInsights = insights;
+            body.innerHTML = `<div class="agent-insights">${insights.map(i => `<div class="agent-insight">${i}</div>`).join('')}</div>`;
+        }
+
+        function renderCpItem(cp) {
+            document.getElementById('cp-empty').style.display = 'none';
+            const list = document.getElementById('cp-list');
+            list.style.display = 'block';
+            const prev = APP.checkpoints.length > 1 ? APP.checkpoints[APP.checkpoints.length - 2].wordCount : 0;
+            const delta = cp.wordCount - prev;
+            const el = document.createElement('div');
+            el.className = 'cp-item';
+            el.innerHTML = `
+    <div class="cp-num">${cp.index + 1}</div>
+    <div class="cp-main">
+      <div class="cp-time">${fmtTime(cp.timestamp)} · ${cp.wordCount} words</div>
+      <div class="cp-blob" onclick="copyText('${cp.blobId}')" title="Click to copy blob ID">${cp.blobId}</div>
+    </div>
+    <div class="cp-wc">${delta > 0 ? `<span class="cp-delta">+${delta}</span>` : ''}</div>`;
+            list.insertBefore(el, list.firstChild);
+        }
+
+        /* ═══ GENERATE PROOF ═══════════════════════════════════════ */
+        async function generateProof() {
+            if (APP.checkpoints.length === 0 || APP.genProof) return;
+            APP.genProof = true;
+            const btn = document.getElementById('proof-btn');
+            const txt = document.getElementById('proof-btn-txt');
+            btn.disabled = true; btn.classList.add('loading');
+            txt.innerHTML = '<span class="spinner"></span>&nbsp;Building proof...';
+            await sleep(1800 + Math.random() * 1000);
+            const proofBlobId = fakeBlobId();
+            const proofUrl = `${WALRUS_AGG}/v1/blobs/${proofBlobId}`;
+            APP.currentProofUrl = proofUrl;
+            saveProof(proofUrl);
+            btn.disabled = false; btn.classList.remove('loading');
+            txt.textContent = 'Generate Proof'; APP.genProof = false;
+            document.getElementById('modal-cps').textContent = APP.checkpoints.length;
+            document.getElementById('modal-wds').textContent = countWords(APP.content);
+            document.getElementById('modal-sub').textContent = `${APP.checkpoints.length} checkpoints · session_${APP.sessionId} · ${truncAddr(APP.walletAddr)}`;
+            document.getElementById('modal-url').textContent = proofUrl;
+            document.getElementById('proof-modal').classList.add('open');
+            toast('Proof published to Walrus!', 'ok');
+            updateNavCounts();
+        }
+
+        /* ═══ MODAL ════════════════════════════════════════════════ */
+        function closeModal(e) { if (e.target.id === 'proof-modal') closeProofModal() }
+        function closeProofModal() { document.getElementById('proof-modal').classList.remove('open') }
+        async function copyProofUrl() { await navigator.clipboard.writeText(APP.currentProofUrl || ''); const b = document.getElementById('modal-copy-btn'); b.textContent = 'Copied!'; setTimeout(() => b.textContent = 'Copy URL', 2000); toast('URL copied', 'ok') }
+        function openProofUrl() { if (APP.currentProofUrl) window.open(APP.currentProofUrl, '_blank') }
+
+        /* ═══ STORAGE ══════════════════════════════════════════════ */
+        function saveSession() {
+            try {
+                const key = 'provenance:sessions';
+                const all = JSON.parse(localStorage.getItem(key) || '[]');
+                const idx = all.findIndex(s => s.sessionId === APP.sessionId);
+                const entry = { sessionId: APP.sessionId, walletAddress: APP.walletAddr, title: titleOf(APP.content), wordCount: countWords(APP.content), checkpointCount: APP.checkpoints.length, lastSaved: new Date().toISOString(), proofUrl: null };
+                if (idx >= 0) { const o = all[idx]; all[idx] = { ...o, ...entry, proofUrl: o.proofUrl } } else { all.unshift(entry) }
+                localStorage.setItem(key, JSON.stringify(all.slice(0, 30))); APP.sessions = all;
+                updateNavCounts();
+            } catch (e) { }
+        }
+        function saveProof(url) {
+            try {
+                const key = 'provenance:proofs';
+                const all = JSON.parse(localStorage.getItem(key) || '[]');
+                all.unshift({ sessionId: APP.sessionId, title: titleOf(APP.content), url, checkpointCount: APP.checkpoints.length, wordCount: countWords(APP.content), walletAddress: APP.walletAddr, createdAt: new Date().toISOString() });
+                localStorage.setItem(key, JSON.stringify(all.slice(0, 50))); APP.proofs = all;
+                const sk = 'provenance:sessions';
+                const sess = JSON.parse(localStorage.getItem(sk) || '[]');
+                const si = sess.findIndex(s => s.sessionId === APP.sessionId);
+                if (si >= 0) sess[si].proofUrl = url;
+                localStorage.setItem(sk, JSON.stringify(sess)); APP.sessions = sess;
+                updateNavCounts();
+            } catch (e) { }
+        }
+        function loadStorage() {
+            try { APP.sessions = JSON.parse(localStorage.getItem('provenance:sessions') || '[]'); APP.proofs = JSON.parse(localStorage.getItem('provenance:proofs') || '[]') } catch (e) { }
+        }
+        function updateNavCounts() {
+            document.getElementById('nav-sess-cnt').textContent = APP.sessions.length;
+            document.getElementById('nav-proof-cnt').textContent = APP.proofs.length;
+        }
+
+        /* ═══ RENDER SESSIONS ══════════════════════════════════════ */
+        function renderSessions() {
+            loadStorage();
+            const grid = document.getElementById('sess-grid');
+            if (APP.sessions.length === 0) { grid.innerHTML = '<div class="empty-state"><p>No sessions yet. Start writing to create your first session.</p></div>'; return }
+            grid.innerHTML = APP.sessions.map(s => `
+    <div class="sess-card">
+      <div class="sc-top"><div class="sc-title">${s.title}</div>${s.proofUrl ? '<span class="sc-proof-pill">Proof Ready</span>' : ''}</div>
+      <div class="sc-meta">${s.checkpointCount} checkpoints · ${s.wordCount} words · ${fmtDate(s.lastSaved)}<br><span style="font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--ink-4)">${truncAddr(s.walletAddress)}</span></div>
+      <div class="sc-acts">
+        ${s.proofUrl ? `<button class="sc-act prim" onclick="window.open('${s.proofUrl}','_blank')">View Proof →</button><button class="sc-act" onclick="copyText('${s.proofUrl}')">Copy URL</button>`
+                    : `<button class="sc-act" onclick="switchPanel('editor',document.querySelector('.dsb-navbtn'))">Continue Writing</button>`}
+      </div>
+    </div>`).join('');
+        }
+
+        /* ═══ RENDER PROOFS ════════════════════════════════════════ */
+        function renderProofs() {
+            loadStorage();
+            const list = document.getElementById('proofs-list');
+            if (APP.proofs.length === 0) { list.innerHTML = '<div class="empty-state"><p>No proofs yet.<br>Write something and click "Generate Proof".</p></div>'; return }
+            list.innerHTML = APP.proofs.map(p => `
+    <div class="proof-card">
+      <div class="pc-head"><div class="pc-title">${p.title}</div><div class="pc-time">${fmtDate(p.createdAt)}</div></div>
+      <div class="pc-url">${p.url}</div>
+      <div class="pc-acts">
+        <button class="pc-act prim" onclick="window.open('${p.url}','_blank')">Open Proof →</button>
+        <button class="pc-act" onclick="copyText('${p.url}')">Copy URL</button>
+        <span style="margin-left:auto;font-size:.7rem;color:var(--ink-4);align-self:center">${p.checkpointCount} cp · ${p.wordCount} words</span>
+      </div>
+    </div>`).join('');
+        }
+
+        /* ═══ WALLET PANEL ═════════════════════════════════════════ */
+        function updateWalletPanel() {
+            loadStorage();
+            document.getElementById('wic-sess-cnt').textContent = APP.sessions.length;
+            document.getElementById('wic-proof-cnt').textContent = APP.proofs.length;
+        }
+
+        /* ═══ NEW SESSION ══════════════════════════════════════════ */
+        function newSession() {
+            APP.sessionId = uid(8); APP.content = ''; APP.cpIndex = 0; APP.checkpoints = [];
+            APP.currentProofUrl = null; APP.nextIn = DEMO_MS / 1000; APP.agentInsights = [];
+            document.getElementById('main-editor').value = '';
+            document.getElementById('etb-sid').textContent = 'session_' + APP.sessionId;
+            document.getElementById('dt-session').textContent = 'session_' + APP.sessionId;
+            document.getElementById('cp-empty').style.display = 'block';
+            document.getElementById('cp-list').style.display = 'none';
+            document.getElementById('cp-list').innerHTML = '';
+            document.getElementById('sb-words').textContent = '0';
+            document.getElementById('sb-cps').textContent = '0';
+            document.getElementById('sb-cps-sub').textContent = 'none sealed yet';
+            document.getElementById('etb-wc').textContent = '0';
+            document.getElementById('etb-cp-cnt').textContent = '0';
+            document.getElementById('nav-editor-cnt').textContent = '0 cp';
+            document.getElementById('proof-btn').disabled = true;
+            document.getElementById('agent-body').innerHTML = '<div class="agent-empty"><p>The writing agent will analyze your draft history<br>after your second checkpoint is sealed.</p></div>';
+            setTicker('idle', 'Next seal in 15s');
+            toast('New session started');
+        }
+
+        /* ═══ DISCONNECT ═══════════════════════════════════════════ */
+        function disconnect() {
+            clearInterval(autosaveT); clearInterval(countdownT);
+            APP.walletAddr = ''; APP.walletName = '';
+            document.getElementById('connect-default').style.display = 'block';
+            document.getElementById('conn-loading').classList.remove('show');
+            document.getElementById('conn-success').classList.remove('show');
+            document.getElementById('wtag-slush').className = 'wi-status wis-detecting';
+            document.getElementById('wtag-slush').textContent = 'Detecting...';
+            document.getElementById('wtag-sui').className = 'wi-status wis-detecting';
+            document.getElementById('wtag-sui').textContent = 'Detecting...';
+            toast('Wallet disconnected');
+            goConnect(); setTimeout(detectWallets, 300);
+        }
+
+        /* ═══ HELPERS ══════════════════════════════════════════════ */
+        function copyAddr() { navigator.clipboard.writeText(APP.walletAddr).then(() => toast('Address copied', 'ok')) }
+        function copyText(t) { navigator.clipboard.writeText(t).then(() => toast('Copied to clipboard', 'ok')) }
+
+        /* ═══ HERO TYPEWRITER ══════════════════════════════════════ */
+        const LINES = ['In a world where AI generates text effortlessly, the process is the proof', 'Provenance creates a cryptographic trail that no language model can fabricate', 'Every word, every revision, every checkpoint — sealed forever on Walrus', 'Your Sui wallet anchors your creative identity to an immutable chain'];
+        let li = 0, ci = 0, typing = true;
+        const typeEl = document.getElementById('hero-type');
+        if (typeEl) {
+            setInterval(() => {
+                const line = LINES[li];
+                if (typing) { if (ci < line.length) ci++; else { typing = false; return } }
+                else { if (ci > 0) ci--; else { li = (li + 1) % LINES.length; typing = true; return } }
+                const cur = typeEl.querySelector('.mock-cursor') || Object.assign(document.createElement('span'), { className: 'mock-cursor' });
+                typeEl.textContent = line.slice(0, ci); typeEl.appendChild(cur);
+            }, 46);
+        }
+    </script>
+</body>
+
+</html>

@@ -1,13 +1,15 @@
 import { createDAppKit } from "@mysten/dapp-kit-react";
-import { SuiGrpcClient } from "@mysten/sui/grpc";
+import { SuiJsonRpcClient, getJsonRpcFullnodeUrl } from "@mysten/sui/jsonRpc";
 
-const GRPC_URLS = {
-  testnet: "https://fullnode.testnet.sui.io:443",
-} as const;
-
+// SuiJsonRpcClient uses JSON-RPC/REST — correct for the standard Sui testnet fullnode.
+// (SuiGrpcClient requires a gRPC-Web endpoint, which fullnode.testnet.sui.io is not.)
 export const dAppKit = createDAppKit({
   networks: ["testnet"],
-  createClient: (network) => new SuiGrpcClient({ network, baseUrl: GRPC_URLS[network] }),
+  createClient: (network) =>
+    new SuiJsonRpcClient({
+      url: getJsonRpcFullnodeUrl(network as "testnet"),
+      network: network as "testnet",
+    }),
 });
 
 declare module "@mysten/dapp-kit-react" {

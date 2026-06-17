@@ -1,9 +1,6 @@
 import { blobUrl, fetchBlob, storeBlob } from "@/lib/walrus";
+import { countWords } from "@/lib/checkpoint";
 import type { Checkpoint, CheckpointMemory, ProofEntry } from "@/types";
-
-function countWords(text: string): number {
-  return text.trim() === "" ? 0 : text.trim().split(/\s+/).length;
-}
 
 function wordDelta(previous: string, current: string): number {
   return countWords(current) - countWords(previous);
@@ -48,6 +45,8 @@ export function generateProofHtml(sessionId: string, walletAddress: string, entr
   const start = entries[0]?.timestamp ?? new Date().toISOString();
   const end = entries[entries.length - 1]?.timestamp ?? start;
   const totalWords = entries[entries.length - 1]?.wordCount ?? 0;
+  const ogTitle = `Provenance Writing Proof — session ${escHtml(sessionId)}`;
+  const ogDesc = `${entries.length} checkpoints, ${totalWords} words. Cryptographically sealed on Walrus by ${escHtml(walletAddress.slice(0, 10))}...`;
   const rows = entries
     .map(
       (entry) => `
@@ -72,6 +71,13 @@ export function generateProofHtml(sessionId: string, walletAddress: string, entr
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Provenance Proof ${escHtml(sessionId)}</title>
+<!-- Open Graph — for social sharing unfurls -->
+<meta property="og:title" content="${ogTitle}" />
+<meta property="og:description" content="${ogDesc}" />
+<meta property="og:type" content="article" />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="${ogTitle}" />
+<meta name="twitter:description" content="${ogDesc}" />
 <style>
 :root{color-scheme:light;--cream:#F7F5F0;--line:#DDD8CE;--ink:#1A1A2E;--muted:#6B6B85;--blue:#3B6FD4;--green:#1D8A5E}
 *{box-sizing:border-box}body{margin:0;background:var(--cream);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,sans-serif;line-height:1.55}
@@ -119,7 +125,8 @@ export async function generateAndPublishProof(
   if (entries.length === 0) throw new Error(`No valid checkpoints for ${sessionId}`);
 
   const html = generateProofHtml(sessionId, walletAddress, entries);
-  const proofBlobId = await storeBlob(html, 53);
+  // Use text/html so browsers render the proof page instead of showing raw source
+  const proofBlobId = await storeBlob(html, 53, "text/html");
 
   return {
     proofBlobId,

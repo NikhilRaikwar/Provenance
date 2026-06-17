@@ -22,10 +22,8 @@ function getClient(): any {
   client = MemWal.create({
     key: process.env.MEMWAL_KEY!,
     accountId: process.env.MEMWAL_ACCOUNT_ID!,
-    serverUrl:
-      process.env.MEMWAL_SERVER_URL ||
-      process.env.MEMWAL_RELAYER ||
-      "https://relayer.memory.walrus.xyz",
+    // Standardized on MEMWAL_SERVER_URL — see .env.example
+    serverUrl: process.env.MEMWAL_SERVER_URL ?? "https://relayer.memory.walrus.xyz",
   });
   return client;
 }
@@ -41,7 +39,8 @@ export async function storeCheckpointMemory(cp: CheckpointMemory): Promise<void>
 export async function recallSession(sessionId: string): Promise<CheckpointMemory[]> {
   const memwal = getClient();
   const namespace = sessionNamespace(sessionId);
-  const result = await memwal.recall(`all checkpoints for session ${sessionId}`, 100, namespace);
+  // Use recommended object form — positional recall(query, limit, namespace) is deprecated
+  const result = await memwal.recall({ query: `all checkpoints for session ${sessionId}`, limit: 100, namespace });
   const rows = Array.isArray(result?.results) ? result.results : [];
 
   return rows

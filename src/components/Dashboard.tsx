@@ -1,30 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ConnectButton } from "@mysten/dapp-kit-react/ui";
 import { useDAppKit, useCurrentWallet, useWalletConnection } from "@mysten/dapp-kit-react";
 import { nanoid } from "nanoid";
-import {
-  Copy,
-  ExternalLink,
-  FileClock,
-  FileText,
-  History,
-  KeyRound,
-  LogOut,
-  PenLine,
-  Plus,
-  ShieldCheck,
-  Wallet,
-} from "lucide-react";
 import { countWords, extractTitle, formatDate, formatTime, truncateAddress } from "@/lib/client-text";
-import type { CheckpointResponse, ProofResponse, Session, SessionShareResponse } from "@/types";
+import type { CheckpointResponse, ProofResponse, Session } from "@/types";
 
 const DEMO = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 const INTERVAL = DEMO ? 15_000 : 60_000;
+const WALRUS_AGG = process.env.NEXT_PUBLIC_WALRUS_AGGREGATOR ?? "https://aggregator.walrus-testnet.walrus.space";
 
-type Panel = "editor" | "sessions" | "proofs" | "wallet";
+type Panel = "editor" | "sessions" | "proofs" | "wallet" | "agent";
 type TickerState = "idle" | "saving" | "saved" | "error";
 
 interface CpLogEntry {
@@ -45,6 +32,16 @@ interface StoredProof {
   createdAt: string;
 }
 
+interface AgentInsight {
+  themes: string[];
+  styleNotes: string;
+  paceSummary: string;
+  keyIdeas: string[];
+  agentSummary: string;
+  analyzedAt: string;
+  checkpointCount: number;
+}
+
 function readJson<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
   try {
@@ -58,6 +55,69 @@ function writeJson(key: string, value: unknown) {
   localStorage.setItem(key, JSON.stringify(value));
 }
 
+// ─── Spinner SVG ──────────────────────────────────────────────────────────────
+function Spinner({ blue = false, size = 14 }: { blue?: boolean; size?: number }) {
+  return (
+    <span
+      style={{
+        display: "inline-block",
+        width: size,
+        height: size,
+        border: `2px solid ${blue ? "var(--blue-mid)" : "rgba(255,255,255,.3)"}`,
+        borderTopColor: blue ? "var(--blue)" : "#fff",
+        borderRadius: "50%",
+        animation: "spin .7s linear infinite",
+        flexShrink: 0,
+      }}
+    />
+  );
+}
+
+// ─── SVG icons (inline, no extra dependency) ──────────────────────────────────
+const IconPen = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M12 20h9" />
+    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+  </svg>
+);
+const IconFile = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+  </svg>
+);
+const IconShield = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M9 12l2 2 4-4" />
+    <circle cx="12" cy="12" r="10" />
+  </svg>
+);
+const IconWallet = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <rect x="2" y="7" width="20" height="14" rx="2" />
+    <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
+  </svg>
+);
+const IconBrain = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <circle cx="12" cy="12" r="10" />
+    <path d="M12 16v-4M12 8h.01" />
+  </svg>
+);
+const IconHome = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+  </svg>
+);
+const IconExternalLink = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+    <polyline points="15 3 21 3 21 9" />
+    <line x1="10" y1="14" x2="21" y2="3" />
+  </svg>
+);
+
+// ─── Dashboard Component ───────────────────────────────────────────────────────
 export function Dashboard() {
   const router = useRouter();
   const dAppKit = useDAppKit();
@@ -66,138 +126,210 @@ export function Dashboard() {
   const walletAddress = connection.account?.address ?? "";
 
   const [panel, setPanel] = useState<Panel>("editor");
-  const [sessionId, setSessionId] = useState(() => nanoid(10));
+  const [sessionId, setSessionId] = useState(() => nanoid(8));
   const [content, setContent] = useState("");
   const [checkpointIndex, setCheckpointIndex] = useState(0);
   const [checkpoints, setCheckpoints] = useState<CpLogEntry[]>([]);
   const [tickerState, setTickerState] = useState<TickerState>("idle");
   const [nextSaveIn, setNextSaveIn] = useState(INTERVAL / 1000);
-  const [lastBlobId, setLastBlobId] = useState<string | null>(null);
   const [proofState, setProofState] = useState<"idle" | "generating" | "done" | "error">("idle");
   const [proofUrl, setProofUrl] = useState<string | null>(null);
-  const [proofBlobId, setProofBlobId] = useState<string | null>(null);
-  const [shareUrl, setShareUrl] = useState<string | null>(null);
-  const [shareBlobId, setShareBlobId] = useState<string | null>(null);
-  const [shareState, setShareState] = useState<"idle" | "sharing" | "done" | "error">("idle");
   const [sessions, setSessions] = useState<Session[]>([]);
   const [proofs, setProofs] = useState<StoredProof[]>([]);
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ msg: string; type: "ok" | "err" | "" } | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [agentInsights, setAgentInsights] = useState<AgentInsight | null>(null);
+  const [agentState, setAgentState] = useState<"idle" | "analyzing" | "done" | "error">("idle");
+  const [agentStrings, setAgentStrings] = useState<string[]>([]);
 
   const contentRef = useRef(content);
-  const indexRef = useRef(checkpointIndex);
-  const tickerRef = useRef<TickerState>(tickerState);
-  contentRef.current = content;
-  indexRef.current = checkpointIndex;
-  tickerRef.current = tickerState;
+  const cpIndexRef = useRef(checkpointIndex);
+  const savingRef = useRef(false);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const wordCount = useMemo(() => countWords(content), [content]);
-  const title = useMemo(() => extractTitle(content), [content]);
+  useEffect(() => { contentRef.current = content; }, [content]);
+  useEffect(() => { cpIndexRef.current = checkpointIndex; }, [checkpointIndex]);
 
-  const showToast = useCallback((message: string) => {
-    setToast(message);
-    window.setTimeout(() => setToast(null), 3600);
+  const wordCount = countWords(content);
+
+  // ─── Toast ────────────────────────────────────────────────────────────────
+  const showToast = useCallback((msg: string, type: "ok" | "err" | "" = "") => {
+    setToast({ msg, type });
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), 3200);
   }, []);
 
+  // ─── Storage ──────────────────────────────────────────────────────────────
   const loadStorage = useCallback(() => {
     setSessions(readJson<Session[]>("provenance:sessions", []));
     setProofs(readJson<StoredProof[]>("provenance:proofs", []));
   }, []);
 
-  useEffect(() => {
-    loadStorage();
-  }, [loadStorage]);
-
-  useEffect(() => {
-    if (connection.status === "disconnected") router.push("/");
-  }, [connection.status, router]);
-
-  const persistSession = useCallback(
-    (partial?: Partial<Session>) => {
-      if (!walletAddress) return;
-      const existing = readJson<Session[]>("provenance:sessions", []);
-      const old = existing.find((item) => item.sessionId === sessionId);
-      const now = new Date().toISOString();
-      const next: Session = {
+  const saveSession = useCallback(
+    (cps: CpLogEntry[], pUrl?: string | null) => {
+      const all = readJson<Session[]>("provenance:sessions", []);
+      const idx = all.findIndex((s) => s.sessionId === sessionId);
+      const existing = idx >= 0 ? all[idx] : null;
+      const finalProofUrl = pUrl !== undefined ? pUrl : (existing ? existing.proofUrl : null);
+      const entry: Session = {
         sessionId,
         walletAddress,
-        title,
-        startTime: old?.startTime ?? checkpoints[0]?.timestamp ?? now,
-        lastSaved: partial?.lastSaved ?? old?.lastSaved ?? now,
-        checkpointCount: partial?.checkpointCount ?? checkpoints.length,
-        wordCount: partial?.wordCount ?? wordCount,
-        lastBlobId: partial?.lastBlobId ?? lastBlobId,
-        proofUrl: partial?.proofUrl ?? old?.proofUrl ?? proofUrl,
-        proofBlobId: partial?.proofBlobId ?? old?.proofBlobId ?? proofBlobId,
-        shareUrl: partial?.shareUrl ?? old?.shareUrl ?? shareUrl,
-        shareBlobId: partial?.shareBlobId ?? old?.shareBlobId ?? shareBlobId,
+        title: extractTitle(contentRef.current),
+        startTime: existing ? existing.startTime : new Date().toISOString(),
+        lastSaved: new Date().toISOString(),
+        checkpointCount: cps.length,
+        wordCount: countWords(contentRef.current),
+        lastBlobId: cps.length > 0 ? cps[cps.length - 1].blobId : null,
+        proofUrl: finalProofUrl,
+        proofBlobId: finalProofUrl
+          ? (finalProofUrl.split("/blobs/")[1] ?? null)
+          : null,
       };
-      const merged = [next, ...existing.filter((item) => item.sessionId !== sessionId)].slice(0, 30);
-      writeJson("provenance:sessions", merged);
-      setSessions(merged);
+      if (idx >= 0) all[idx] = entry;
+      else all.unshift(entry);
+      writeJson("provenance:sessions", all.slice(0, 30));
+      setSessions([...all]);
     },
-    [checkpoints, lastBlobId, proofBlobId, proofUrl, sessionId, shareBlobId, shareUrl, title, walletAddress, wordCount],
+    [sessionId, walletAddress],
   );
 
-  const saveCheckpoint = useCallback(async () => {
-    if (!walletAddress || contentRef.current.trim() === "" || tickerRef.current === "saving") return;
+  const saveProof = useCallback(
+    (url: string, cps: CpLogEntry[]) => {
+      const all = readJson<StoredProof[]>("provenance:proofs", []);
+      all.unshift({
+        sessionId,
+        title: extractTitle(contentRef.current),
+        url,
+        proofBlobId: url.split("/blobs/")[1] ?? null,
+        checkpointCount: cps.length,
+        wordCount: countWords(contentRef.current),
+        walletAddress,
+        createdAt: new Date().toISOString(),
+      });
+      writeJson("provenance:proofs", all.slice(0, 50));
+      setProofs([...all]);
+      // also update sessions proofUrl
+      saveSession(cps, url);
+    },
+    [sessionId, walletAddress, saveSession],
+  );
 
+  useEffect(() => { loadStorage(); }, [loadStorage]);
+
+  // ─── Seal Checkpoint ──────────────────────────────────────────────────────
+  const sealCheckpoint = useCallback(async () => {
+    if (contentRef.current.trim() === "" || savingRef.current) return;
+    savingRef.current = true;
     setTickerState("saving");
+
     try {
       const res = await fetch("/api/checkpoint", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           sessionId,
-          walletAddress,
           content: contentRef.current,
-          checkpointIndex: indexRef.current,
+          checkpointIndex: cpIndexRef.current,
+          walletAddress,
         }),
       });
-      const data = (await res.json()) as CheckpointResponse;
-      if (!data.success) throw new Error(data.error || "Checkpoint failed");
 
-      const nextEntry: CpLogEntry = {
-        blobId: data.blobId!,
-        timestamp: data.timestamp!,
-        wordCount: data.wordCount!,
-        index: data.checkpointIndex!,
+      if (!res.ok) throw new Error(`API ${res.status}`);
+      const data = (await res.json()) as CheckpointResponse;
+      if (!data.blobId || !data.timestamp || data.wordCount === undefined) {
+        throw new Error(data.error || "Malformed checkpoint response");
+      }
+
+      const cp: CpLogEntry = {
+        blobId: data.blobId,
+        timestamp: data.timestamp,
+        wordCount: data.wordCount,
+        index: cpIndexRef.current,
       };
 
-      setCheckpoints((prev) => [nextEntry, ...prev]);
-      setCheckpointIndex((value) => value + 1);
-      setLastBlobId(data.blobId!);
-      setTickerState("saved");
-      setNextSaveIn(INTERVAL / 1000);
-      persistSession({
-        lastSaved: data.timestamp!,
-        checkpointCount: indexRef.current + 1,
-        wordCount: data.wordCount!,
-        lastBlobId: data.blobId!,
+      setCheckpoints((prev) => {
+        const next = [...prev, cp];
+        setCheckpointIndex(next.length);
+        cpIndexRef.current = next.length;
+        saveSession(next);
+        // Trigger agent after 2+ checkpoints
+        if (next.length >= 2 && agentState === "idle") {
+          runAgentAnalysis(next);
+        }
+        return next;
       });
-      showToast(`Checkpoint #${data.checkpointIndex! + 1} sealed on Walrus`);
-      window.setTimeout(() => setTickerState("idle"), 2600);
-    } catch (error) {
+
+      setTickerState("saved");
+      showToast(`Checkpoint #${cpIndexRef.current} sealed on Walrus`, "ok");
+      setTimeout(() => setTickerState("idle"), 3000);
+    } catch (err) {
       setTickerState("error");
-      showToast(error instanceof Error ? error.message : "Checkpoint failed");
-      window.setTimeout(() => setTickerState("idle"), 4200);
+      showToast("Checkpoint failed — check your .env credentials", "err");
+      setTimeout(() => setTickerState("idle"), 4000);
+    } finally {
+      savingRef.current = false;
+      setNextSaveIn(INTERVAL / 1000);
     }
-  }, [persistSession, sessionId, showToast, walletAddress]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId, walletAddress, saveSession, agentState, showToast]);
 
+  // ─── Timer ────────────────────────────────────────────────────────────────
   useEffect(() => {
-    const autosave = window.setInterval(() => {
-      void saveCheckpoint();
-    }, INTERVAL);
-    const countdown = window.setInterval(() => {
-      setNextSaveIn((value) => (tickerRef.current === "idle" ? Math.max(0, value - 1) : value));
+    const auto = setInterval(() => sealCheckpoint(), INTERVAL);
+    const cd = setInterval(() => {
+      if (!savingRef.current) {
+        setNextSaveIn((n) => {
+          const v = Math.max(0, n - 1);
+          return v;
+        });
+      }
     }, 1000);
-    return () => {
-      window.clearInterval(autosave);
-      window.clearInterval(countdown);
-    };
-  }, [saveCheckpoint]);
+    return () => { clearInterval(auto); clearInterval(cd); };
+  }, [sealCheckpoint]);
 
-  const generateProof = async () => {
+  // ─── Agent Analysis ───────────────────────────────────────────────────────
+  const runAgentAnalysis = useCallback(
+    async (cps?: CpLogEntry[]) => {
+      const latestCps = cps ?? checkpoints;
+      if (latestCps.length === 0) return;
+      setAgentState("analyzing");
+
+      // Optimistic local analysis while API runs
+      const wc = countWords(contentRef.current);
+      const avg = Math.round(wc / Math.max(latestCps.length, 1));
+      const localInsights = [
+        `Writing velocity: ~${avg} words per checkpoint (${latestCps.length} checkpoints sealed)`,
+        `Provenance chain: ${latestCps.length} SHA-256 hashed blobs in MemWal namespace provenance:${sessionId}`,
+        wc > 100
+          ? `Content depth: Draft has reached ${wc} words — approaching paragraph-level substance`
+          : `Content building: ${wc} words so far — keep going to unlock AI analysis`,
+      ];
+      setAgentStrings(localInsights);
+
+      try {
+        const res = await fetch("/api/agent/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sessionId, walletAddress }),
+        });
+        const data = await res.json();
+        if (data.success && data.insight) {
+          setAgentInsights(data.insight as AgentInsight);
+          setAgentStrings([]);
+        } else {
+          // Keep local insights visible
+        }
+      } catch {
+        // Local insights already shown — silently continue
+      } finally {
+        setAgentState("done");
+      }
+    },
+    [checkpoints, sessionId, walletAddress],
+  );
+
+  // ─── Generate Proof ───────────────────────────────────────────────────────
+  const generateProof = useCallback(async () => {
     if (checkpoints.length === 0 || proofState === "generating") return;
     setProofState("generating");
     try {
@@ -206,441 +338,589 @@ export function Dashboard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sessionId, walletAddress }),
       });
+      if (!res.ok) throw new Error(`API ${res.status}`);
       const data = (await res.json()) as ProofResponse;
-      if (!data.success) throw new Error(data.error || "Proof generation failed");
-
-      const storedProof: StoredProof = {
-        sessionId,
-        title,
-        url: data.proofUrl!,
-        proofBlobId: data.proofBlobId ?? null,
-        checkpointCount: data.checkpointCount ?? checkpoints.length,
-        wordCount,
-        walletAddress,
-        createdAt: new Date().toISOString(),
-      };
-      const mergedProofs = [storedProof, ...readJson<StoredProof[]>("provenance:proofs", [])].slice(0, 50);
-      writeJson("provenance:proofs", mergedProofs);
-      setProofs(mergedProofs);
-      setProofUrl(data.proofUrl!);
-      setProofBlobId(data.proofBlobId ?? null);
-      persistSession({ proofUrl: data.proofUrl!, proofBlobId: data.proofBlobId ?? null });
+      if (!data.proofUrl) {
+        throw new Error(data.error || "Proof URL missing from response");
+      }
+      setProofUrl(data.proofUrl);
       setProofState("done");
+      saveProof(data.proofUrl, checkpoints);
       setModalOpen(true);
-      showToast("Proof published to Walrus");
-    } catch (error) {
+      showToast("Proof published to Walrus!", "ok");
+    } catch {
       setProofState("error");
-      showToast(error instanceof Error ? error.message : "Proof generation failed");
-      window.setTimeout(() => setProofState("idle"), 4200);
+      showToast("Proof generation failed", "err");
+      setTimeout(() => setProofState("idle"), 4000);
     }
-  };
+  }, [checkpoints, proofState, sessionId, walletAddress, saveProof, showToast]);
 
-  const shareSession = async () => {
-    if (checkpoints.length === 0 || shareState === "sharing") return;
-    setShareState("sharing");
-    try {
-      const res = await fetch("/api/session-share", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sessionId,
-          walletAddress,
-          title,
-          wordCount,
-          checkpointCount: checkpoints.length,
-          checkpoints: [...checkpoints].reverse(),
-          proofUrl,
-        }),
-      });
-      const data = (await res.json()) as SessionShareResponse;
-      if (!data.success) throw new Error(data.error || "Session share failed");
-      setShareUrl(data.shareUrl!);
-      setShareBlobId(data.shareBlobId ?? null);
-      persistSession({ shareUrl: data.shareUrl!, shareBlobId: data.shareBlobId ?? null });
-      setShareState("done");
-      showToast("Session manifest published to Walrus");
-    } catch (error) {
-      setShareState("error");
-      showToast(error instanceof Error ? error.message : "Session share failed");
-      window.setTimeout(() => setShareState("idle"), 4200);
-    }
-  };
-
-  const disconnectWallet = async () => {
-    await dAppKit.disconnectWallet();
-    router.push("/");
-  };
-
-  const startNewSession = () => {
-    setSessionId(nanoid(10));
+  // ─── New Session ──────────────────────────────────────────────────────────
+  const startNewSession = useCallback(() => {
+    setSessionId(nanoid(8));
     setContent("");
     setCheckpointIndex(0);
     setCheckpoints([]);
-    setLastBlobId(null);
-    setProofUrl(null);
-    setProofBlobId(null);
-    setShareUrl(null);
-    setShareBlobId(null);
-    setShareState("idle");
-    setProofState("idle");
+    setTickerState("idle");
     setNextSaveIn(INTERVAL / 1000);
+    setProofUrl(null);
+    setProofState("idle");
+    setAgentInsights(null);
+    setAgentStrings([]);
+    setAgentState("idle");
     setPanel("editor");
-    showToast("New Provenance session started");
+    showToast("New session started");
+  }, [showToast]);
+
+  // ─── Disconnect ───────────────────────────────────────────────────────────
+  const disconnectWallet = useCallback(async () => {
+    try {
+      await dAppKit.disconnectWallet();
+    } catch {
+      /* ignore */
+    }
+    router.push("/");
+  }, [dAppKit, router]);
+
+  // ─── Copy helper ──────────────────────────────────────────────────────────
+  const copy = useCallback(
+    async (text: string, label = "Copied!") => {
+      await navigator.clipboard.writeText(text);
+      showToast(label, "ok");
+    },
+    [showToast],
+  );
+
+  // ─── Panel switch with data load ─────────────────────────────────────────
+  const goPanel = useCallback(
+    (p: Panel) => {
+      setPanel(p);
+      if (p === "sessions" || p === "proofs" || p === "wallet") loadStorage();
+      if (p === "agent" && agentState === "idle" && checkpoints.length >= 1) {
+        void runAgentAnalysis();
+      }
+    },
+    [loadStorage, agentState, checkpoints.length, runAgentAnalysis],
+  );
+
+  // ─── Ticker label ─────────────────────────────────────────────────────────
+  const tickerLabel = () => {
+    if (tickerState === "saving") return "Sealing on Walrus...";
+    if (tickerState === "saved" ) return "✓ Sealed on Walrus";
+    if (tickerState === "error" ) return "Seal failed";
+    return `Next seal in ${nextSaveIn}s`;
   };
 
-  const copyText = async (value: string, label = "Copied to clipboard") => {
-    await navigator.clipboard.writeText(value);
-    showToast(label);
-  };
+  const tickerClass = {
+    idle:   "ticker tk-idle",
+    saving: "ticker tk-saving",
+    saved:  "ticker tk-saved",
+    error:  "ticker tk-error",
+  }[tickerState];
 
-  if (!walletAddress) {
-    return (
-      <main className="min-h-screen grid place-items-center p-6">
-        <section className="panel-card max-w-md text-center">
-          <div className="inline-brand justify-center mb-4">
-            <span className="pulse-dot" />
-            <strong className="font-display text-2xl">Provenance</strong>
-          </div>
-          <h1 className="font-display text-3xl font-bold mb-3">Connect your Sui wallet.</h1>
-          <p className="text-[var(--ink-3)] mb-6">
-            Your wallet anchors the writing session before checkpoints are sealed to Walrus.
-          </p>
-          <ConnectButton>
-            <span className="inline-flex items-center gap-2">
-              <Wallet size={18} /> Connect Wallet
-            </span>
-          </ConnectButton>
-        </section>
-      </main>
-    );
-  }
+  const walletInitial = wallet?.name?.[0]?.toUpperCase() ?? walletAddress.slice(2, 4).toUpperCase() ?? "P";
 
+  // ─── Render ───────────────────────────────────────────────────────────────
   return (
-    <div className="dashboard-shell">
-      <aside className="sidebar">
-        <div className="sidebar-brand">
-          <span className="pulse-dot" />
-          Provenance
-        </div>
-        <div className="sidebar-card">
-          <div className="sidebar-label">Connected wallet</div>
-          <div className="sidebar-value">{truncateAddress(walletAddress)}</div>
-          <button className="btn-soft mt-3 w-full" type="button" onClick={() => copyText(walletAddress, "Address copied")}>
-            <Copy size={15} /> Copy address
-          </button>
-        </div>
-        <div className="side-stats">
-          <div className="side-stat">
-            <b>{wordCount}</b>
-            <span>words</span>
-          </div>
-          <div className="side-stat">
-            <b>{checkpoints.length}</b>
-            <span>checkpoints</span>
-          </div>
-        </div>
-        <nav className="sidebar-nav">
-          <SideNavButton active={panel === "editor"} count={`${checkpoints.length} cp`} icon={<PenLine />} label="Editor" onClick={() => setPanel("editor")} />
-          <SideNavButton active={panel === "sessions"} count={sessions.length} icon={<History />} label="Sessions" onClick={() => { loadStorage(); setPanel("sessions"); }} />
-          <SideNavButton active={panel === "proofs"} count={proofs.length} icon={<ShieldCheck />} label="Proofs" onClick={() => { loadStorage(); setPanel("proofs"); }} />
-          <SideNavButton active={panel === "wallet"} icon={<KeyRound />} label="Wallet Info" onClick={() => setPanel("wallet")} />
-        </nav>
-      </aside>
+    <div id="page-dashboard" style={{ display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden" }}>
 
-      <main className="dash-main">
-        <div className="dash-topbar">
-          <div>
-            <div className="topbar-title">{panelTitle(panel)}</div>
-            <div className="topbar-session">session_{sessionId}</div>
-          </div>
-          <div className="topbar-actions">
-            <button className="btn-soft" type="button" onClick={startNewSession}>
-              <Plus /> New session
-            </button>
-            <button className="btn-soft" type="button" onClick={() => void disconnectWallet()}>
-              <LogOut /> Disconnect
-            </button>
+      {/* ── Toast ─────────────────────────────────────────────────────── */}
+      {toast && (
+        <div className={`toast-d ${toast.type === "ok" ? "toast-ok" : toast.type === "err" ? "toast-err" : ""}`}>
+          {toast.msg}
+        </div>
+      )}
+
+      {/* ── Proof Modal ───────────────────────────────────────────────── */}
+      {modalOpen && proofUrl && (
+        <div className="modal-backdrop open" onClick={(e) => { if ((e.target as HTMLElement).classList.contains("modal-backdrop")) setModalOpen(false); }}>
+          <div className="modal-box">
+            <button className="modal-x" type="button" onClick={() => setModalOpen(false)}>✕</button>
+            <div className="modal-icon">✓</div>
+            <div className="modal-title">Proof Sealed on Walrus</div>
+            <p className="modal-sub">
+              {checkpoints.length} checkpoints · session_{sessionId} · {truncateAddress(walletAddress)}
+            </p>
+            <div className="modal-sum">
+              <div className="ms-item"><div className="ms-val">{checkpoints.length}</div><div className="ms-lbl">checkpoints</div></div>
+              <div className="ms-item"><div className="ms-val">{wordCount}</div><div className="ms-lbl">words</div></div>
+              <div className="ms-item"><div className="ms-val">∞</div><div className="ms-lbl">lifetime</div></div>
+            </div>
+            <div className="modal-url-lbl">Permanent Walrus Proof URL</div>
+            <div className="modal-url">{proofUrl}</div>
+            <div className="modal-acts">
+              <button className="modal-copy" type="button" onClick={() => copy(proofUrl, "URL copied!")}>Copy URL</button>
+              <a className="modal-open" href={proofUrl} target="_blank" rel="noreferrer">Open Proof →</a>
+            </div>
           </div>
         </div>
+      )}
 
-        <section className={`dash-panel ${panel === "editor" ? "active" : ""}`}>
-          <div className="editor-grid">
-            <div className="editor-frame">
-              <div className="editor-toolbar">
-                <div className="editor-meta">
-                  <span className="font-display font-bold">Provenance</span>
-                  <span className="text-sm text-[var(--ink-3)]">{wordCount} words</span>
-                  <Ticker state={tickerState} nextSaveIn={nextSaveIn} lastBlobId={lastBlobId} />
-                </div>
-                <button className="btn-dark" disabled={proofState === "generating" || checkpoints.length === 0} type="button" onClick={generateProof}>
-                  <FileText />
-                  {proofState === "generating" ? "Building proof..." : "Generate Proof"}
-                </button>
+      {/* ── Dashboard Shell ───────────────────────────────────────────── */}
+      <div className="dash-shell">
+
+        {/* ── Sidebar ───────────────────────────────────────────────── */}
+        <aside className="dsidebar">
+          {/* Brand + new session */}
+          <div className="dsb-head">
+            <div className="brand">
+              <span className="pulse" />
+              <span className="dsb-brand">Provenance</span>
+            </div>
+            <button className="dsb-newbtn" type="button" title="New session" onClick={startNewSession}>+</button>
+          </div>
+
+          {/* Wallet chip */}
+          <div className="dsb-wallet">
+            <div className="dsb-wdot" />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="dsb-waddr">{truncateAddress(walletAddress)}</div>
+              <div className="dsb-wnet">Sui Testnet</div>
+            </div>
+            <button type="button" className="dsb-wdiscon" onClick={disconnectWallet}>Disconnect</button>
+          </div>
+
+          {/* Nav */}
+          <nav className="dsb-nav">
+            <div className="dsb-sec-lbl">Workspace</div>
+
+            <button type="button" className={`dsb-navbtn ${panel === "editor" ? "active" : ""}`} onClick={() => goPanel("editor")}>
+              <IconPen />
+              Editor
+              <span className="dsb-count">{checkpoints.length} cp</span>
+            </button>
+
+            <button type="button" className={`dsb-navbtn ${panel === "sessions" ? "active" : ""}`} onClick={() => goPanel("sessions")}>
+              <IconFile />
+              Sessions
+              <span className="dsb-count">{sessions.length}</span>
+            </button>
+
+            <button type="button" className={`dsb-navbtn ${panel === "proofs" ? "active" : ""}`} onClick={() => goPanel("proofs")}>
+              <IconShield />
+              Proofs
+              <span className="dsb-count">{proofs.length}</span>
+            </button>
+
+            <button type="button" className={`dsb-navbtn ${panel === "agent" ? "active" : ""}`} onClick={() => goPanel("agent")}>
+              <IconBrain />
+              Agent Insights
+              {agentState === "analyzing" && <span className="dsb-count" style={{ color: "var(--sui)" }}>•••</span>}
+            </button>
+
+            <div className="dsb-sec-lbl" style={{ marginTop: "0.75rem" }}>Account</div>
+
+            <button type="button" className={`dsb-navbtn ${panel === "wallet" ? "active" : ""}`} onClick={() => goPanel("wallet")}>
+              <IconWallet />
+              Wallet Info
+            </button>
+
+            <button type="button" className="dsb-navbtn" onClick={() => router.push("/")}>
+              <IconHome />
+              Home
+            </button>
+          </nav>
+
+          {/* Bottom Walrus status */}
+          <div className="dsb-bottom">
+            <div className="walrus-chip">
+              <div className="wc-dot" />
+              <div className="wc-txt">Walrus Testnet</div>
+              <div className="wc-net">Live</div>
+            </div>
+          </div>
+        </aside>
+
+        {/* ── Main Area ──────────────────────────────────────────────── */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+
+          {/* Topbar */}
+          <div className="dash-topbar">
+            <div className="dt-left">
+              <div className="dt-title">
+                {{ editor: "Editor", sessions: "Sessions", proofs: "Proofs", wallet: "Wallet Info", agent: "AI Agent Insights" }[panel]}
               </div>
-              <textarea
-                autoFocus
-                className="editor-textarea"
-                onChange={(event) => setContent(event.target.value)}
-                placeholder="Start writing. Your process is being sealed on Walrus..."
-                value={content}
-              />
+              <div className="dt-session">session_{sessionId}</div>
+            </div>
+            <div className="dt-right">
+              {DEMO && <span className="dt-demo">Demo Mode · 15s seal</span>}
+              <div className="dt-avatar">{walletInitial}</div>
+            </div>
+          </div>
+
+          {/* Scrollable content */}
+          <div className="dash-main">
+
+            {/* ══ EDITOR PANEL ══════════════════════════════════════════ */}
+            <div className={`dpanel ${panel === "editor" ? "active" : ""}`} id="panel-editor">
+
+              {/* Stats bar */}
+              <div className="stats-bar">
+                <div className="stat-box">
+                  <div className="stat-box-lbl">Words</div>
+                  <div className="stat-box-val">{wordCount}</div>
+                  <div className="stat-box-sub">current draft</div>
+                </div>
+                <div className="stat-box">
+                  <div className="stat-box-lbl">Checkpoints</div>
+                  <div className="stat-box-val">{checkpoints.length}</div>
+                  <div className={`stat-box-sub ${checkpoints.length > 0 ? "ok" : ""}`}>
+                    {checkpoints.length > 0
+                      ? `last: ${formatTime(checkpoints[checkpoints.length - 1]?.timestamp)}`
+                      : "none sealed yet"}
+                  </div>
+                </div>
+                <div className="stat-box">
+                  <div className="stat-box-lbl">Next Seal</div>
+                  <div className="stat-box-val">{tickerState === "saving" ? "…" : `${nextSaveIn}s`}</div>
+                  <div className="stat-box-sub warn">{DEMO ? "demo interval" : "1 min interval"}</div>
+                </div>
+                <div className="stat-box">
+                  <div className="stat-box-lbl">Wallet</div>
+                  <div className="stat-box-val" style={{ fontSize: "1rem", fontFamily: "'JetBrains Mono', monospace" }}>
+                    {truncateAddress(walletAddress)}
+                  </div>
+                  <div className="stat-box-sub ok">Connected · Testnet</div>
+                </div>
+              </div>
+
+              {/* Editor section */}
+              <div className="editor-section">
+
+                {/* Main editor card */}
+                <div className="editor-card">
+                  <div className="editor-toolbar">
+                    <div className="etb-left">
+                      <span className="etb-sid">session_{sessionId}</span>
+                      <span className="etb-wc">{wordCount} words</span>
+                      <div className={tickerClass}>
+                        <span className="tk-dot" />
+                        <span>{tickerLabel()}</span>
+                      </div>
+                    </div>
+                    <div className="etb-right">
+                      <span className="etb-cp-badge">{checkpoints.length} checkpoints</span>
+                      <button
+                        type="button"
+                        className={`btn-proof ${proofState === "generating" ? "loading" : ""}`}
+                        disabled={checkpoints.length === 0 || proofState === "generating"}
+                        onClick={generateProof}
+                        id="proof-btn"
+                      >
+                        {proofState === "generating" ? (
+                          <><Spinner /> Building proof...</>
+                        ) : "Generate Proof"}
+                      </button>
+                    </div>
+                  </div>
+                  <textarea
+                    className="dash-textarea"
+                    id="main-editor"
+                    placeholder={`Start writing. Your process is being sealed on Walrus every ${DEMO ? "15 seconds (demo mode)" : "60 seconds"}...`}
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                  />
+                </div>
+
+                {/* Agent Insights card (embedded in editor) */}
+                <div className="agent-card">
+                  <div className="agent-head">
+                    <IconBrain />
+                    <div className="agent-head-title">AI Writing Agent</div>
+                    <span className="agent-badge">MemWal powered</span>
+                  </div>
+                  <div id="agent-body">
+                    {agentState === "analyzing" ? (
+                      <div className="agent-analyzing">
+                        <Spinner blue size={14} />
+                        Agent analyzing checkpoint history via MemWal...
+                      </div>
+                    ) : agentInsights ? (
+                      <div className="agent-insights">
+                        {agentInsights.agentSummary && (
+                          <div className="agent-insight">{agentInsights.agentSummary}</div>
+                        )}
+                        {agentInsights.themes.length > 0 && (
+                          <div className="agent-insight">
+                            Themes detected: {agentInsights.themes.join(" · ")}
+                          </div>
+                        )}
+                        {agentInsights.styleNotes && (
+                          <div className="agent-insight">Style: {agentInsights.styleNotes}</div>
+                        )}
+                        {agentInsights.paceSummary && (
+                          <div className="agent-insight">{agentInsights.paceSummary}</div>
+                        )}
+                        {agentInsights.keyIdeas.length > 0 && (
+                          <div className="agent-insight">
+                            Key ideas: {agentInsights.keyIdeas.join(" · ")}
+                          </div>
+                        )}
+                      </div>
+                    ) : agentStrings.length > 0 ? (
+                      <div className="agent-insights">
+                        {agentStrings.map((s) => (
+                          <div className="agent-insight" key={s}>{s}</div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="agent-empty">
+                        <p>
+                          The writing agent will analyze your draft history
+                          <br />
+                          after your second checkpoint is sealed.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Checkpoint log */}
+                <div className="cp-log-card">
+                  <div className="cp-log-head">
+                    <div className="cp-log-title">Checkpoint Chain</div>
+                    <div className="cp-log-meta">Each entry is a permanent Walrus blob</div>
+                  </div>
+                  {checkpoints.length === 0 ? (
+                    <div className="cp-empty">
+                      <p>No checkpoints yet.<br />Start typing — your first seal fires in {nextSaveIn}s.</p>
+                    </div>
+                  ) : (
+                    <div className="cp-list">
+                      {[...checkpoints].reverse().map((cp, i, arr) => {
+                        const prev = arr[i + 1]?.wordCount ?? 0;
+                        const delta = cp.wordCount - prev;
+                        return (
+                          <div key={cp.blobId} className="cp-item">
+                            <div className="cp-num">{cp.index + 1}</div>
+                            <div className="cp-main">
+                              <div className="cp-time">{formatTime(cp.timestamp)} · {cp.wordCount} words</div>
+                              <div
+                                className="cp-blob"
+                                title="Click to copy blob ID"
+                                onClick={() => copy(cp.blobId, "Blob ID copied")}
+                              >
+                                {cp.blobId}
+                              </div>
+                            </div>
+                            <div className="cp-wc">
+                              {delta > 0 && <span className="cp-delta">+{delta}</span>}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+              </div>
             </div>
 
-            <aside className="checkpoint-panel">
-              <div className="panel-card">
-                <h2 className="panel-title">Checkpoint chain</h2>
-                <p className="panel-sub">
-                  {DEMO ? "Demo Mode - 15s seal" : "Production cadence - 60s seal"}
-                </p>
-                <button className="btn-sui w-full" disabled={content.trim() === "" || tickerState === "saving"} type="button" onClick={() => void saveCheckpoint()}>
-                  <FileClock /> Seal now
-                </button>
-                <button className="btn-outline w-full mt-3" disabled={checkpoints.length === 0 || shareState === "sharing"} type="button" onClick={() => void shareSession()}>
-                  <ExternalLink /> {shareState === "sharing" ? "Publishing session..." : "Share Session"}
-                </button>
-                {shareUrl ? (
-                  <button className="btn-soft w-full mt-3" type="button" onClick={() => copyText(shareUrl, "Session URL copied")}>
-                    <Copy /> Copy session URL
-                  </button>
-                ) : null}
+            {/* ══ SESSIONS PANEL ════════════════════════════════════════ */}
+            <div className={`dpanel ${panel === "sessions" ? "active" : ""}`} id="panel-sessions">
+              <div className="sessions-wrap">
+                <div className="panel-head">
+                  <div>
+                    <div className="ph-title">Sessions</div>
+                    <div className="ph-sub">All writing sessions from your wallet</div>
+                  </div>
+                  <button type="button" className="btn-small dark" onClick={startNewSession}>+ New Session</button>
+                </div>
+                <div className="sess-grid">
+                  {sessions.length === 0 ? (
+                    <div className="empty-state"><p>No sessions yet. Start writing to create your first session.</p></div>
+                  ) : sessions.map((s) => (
+                    <div key={s.sessionId} className="sess-card">
+                      <div className="sc-top">
+                        <div className="sc-title">{s.title || "Untitled"}</div>
+                        {s.proofUrl && <span className="sc-proof-pill">Proof Ready</span>}
+                      </div>
+                      <div className="sc-meta">
+                        {s.checkpointCount} checkpoints · {s.wordCount} words · {formatDate(s.lastSaved)}
+                        <br />
+                        <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: ".65rem", color: "var(--ink-4)" }}>
+                          {truncateAddress(s.walletAddress)}
+                        </span>
+                      </div>
+                      <div className="sc-acts">
+                        {s.proofUrl ? (
+                          <>
+                            <a className="sc-act prim" href={s.proofUrl} target="_blank" rel="noreferrer">View Proof →</a>
+                            <button type="button" className="sc-act" onClick={() => copy(s.proofUrl!, "URL copied!")}>Copy URL</button>
+                          </>
+                        ) : (
+                          <button type="button" className="sc-act" onClick={() => setPanel("editor")}>Continue Writing</button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="panel-card">
-                <h2 className="panel-title">Sealed checkpoints</h2>
-                <p className="panel-sub">Permanent Walrus blob IDs for this session.</p>
-                {checkpoints.length === 0 ? (
-                  <div className="cp-empty">No checkpoints yet. Write text and wait for the next seal.</div>
-                ) : (
-                  <div className="cp-list">
-                    {checkpoints.map((cp) => (
-                      <div className="cp-item" key={`${cp.blobId}-${cp.index}`}>
-                        <div className="cp-num">{cp.index + 1}</div>
-                        <div className="min-w-0">
-                          <div className="cp-time">
-                            {formatTime(cp.timestamp)} - {cp.wordCount} words
-                          </div>
-                          <button className="cp-blob text-left w-full" type="button" onClick={() => copyText(cp.blobId, "Blob ID copied")}>
-                            {cp.blobId}
-                          </button>
+            </div>
+
+            {/* ══ PROOFS PANEL ══════════════════════════════════════════ */}
+            <div className={`dpanel ${panel === "proofs" ? "active" : ""}`} id="panel-proofs">
+              <div className="sessions-wrap">
+                <div className="panel-head">
+                  <div>
+                    <div className="ph-title">Generated Proofs</div>
+                    <div className="ph-sub">Permanent Walrus proof pages</div>
+                  </div>
+                </div>
+                <div id="proofs-list">
+                  {proofs.length === 0 ? (
+                    <div className="empty-state">
+                      <p>No proofs yet.<br />Write something and click "Generate Proof" to create your first verifiable authorship certificate.</p>
+                    </div>
+                  ) : proofs.map((p) => (
+                    <div key={`${p.sessionId}-${p.createdAt}`} className="proof-card">
+                      <div className="pc-head">
+                        <div className="pc-title">{p.title || "Untitled"}</div>
+                        <div className="pc-time">{formatDate(p.createdAt)}</div>
+                      </div>
+                      <div className="pc-url">{p.url}</div>
+                      <div className="pc-acts">
+                        <a className="pc-act prim" href={p.url} target="_blank" rel="noreferrer">Open Proof →</a>
+                        <button type="button" className="pc-act" onClick={() => copy(p.url, "URL copied!")}>Copy URL</button>
+                        <span style={{ marginLeft: "auto", fontSize: ".7rem", color: "var(--ink-4)", alignSelf: "center" }}>
+                          {p.checkpointCount} cp · {p.wordCount} words
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* ══ AGENT PANEL ═══════════════════════════════════════════ */}
+            <div className={`dpanel ${panel === "agent" ? "active" : ""}`} id="panel-agent">
+              <div className="sessions-wrap">
+                <div className="panel-head">
+                  <div>
+                    <div className="ph-title">AI Writing Agent</div>
+                    <div className="ph-sub">Powered by MemWal persistent memory</div>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-small dark"
+                    disabled={checkpoints.length === 0 || agentState === "analyzing"}
+                    onClick={() => void runAgentAnalysis()}
+                  >
+                    {agentState === "analyzing" ? <><Spinner />Analyzing…</> : "Re-analyse"}
+                  </button>
+                </div>
+
+                {agentState === "analyzing" ? (
+                  <div className="agent-card">
+                    <div className="agent-head">
+                      <IconBrain />
+                      <div className="agent-head-title">AI Writing Agent</div>
+                      <span className="agent-badge">MemWal powered</span>
+                    </div>
+                    <div className="agent-analyzing">
+                      <Spinner blue size={14} />
+                      Recalling checkpoint history from MemWal and running analysis...
+                    </div>
+                  </div>
+                ) : agentInsights ? (
+                  <>
+                    <div className="agent-card" style={{ marginBottom: "1rem" }}>
+                      <div className="agent-head">
+                        <IconBrain />
+                        <div className="agent-head-title">AI Writing Agent</div>
+                        <span className="agent-badge">MemWal powered</span>
+                      </div>
+                      <div className="agent-insights">
+                        <div className="agent-insight" style={{ fontWeight: 600 }}>{agentInsights.agentSummary}</div>
+                        {agentInsights.styleNotes && <div className="agent-insight">Style: {agentInsights.styleNotes}</div>}
+                        {agentInsights.paceSummary && <div className="agent-insight">{agentInsights.paceSummary}</div>}
+                        {agentInsights.themes.length > 0 && (
+                          <div className="agent-insight">Themes: {agentInsights.themes.join(" · ")}</div>
+                        )}
+                        {agentInsights.keyIdeas.length > 0 && (
+                          <div className="agent-insight">Key ideas: {agentInsights.keyIdeas.join(" · ")}</div>
+                        )}
+                        <div className="agent-insight" style={{ color: "var(--ink-4)" }}>
+                          Analysed {agentInsights.checkpointCount} checkpoint{agentInsights.checkpointCount !== 1 ? "s" : ""} · {formatDate(agentInsights.analyzedAt)}
                         </div>
                       </div>
-                    ))}
+                    </div>
+                  </>
+                ) : agentStrings.length > 0 ? (
+                  <div className="agent-card">
+                    <div className="agent-head">
+                      <IconBrain />
+                      <div className="agent-head-title">AI Writing Agent</div>
+                      <span className="agent-badge">Local analysis</span>
+                    </div>
+                    <div className="agent-insights">
+                      {agentStrings.map((s) => <div className="agent-insight" key={s}>{s}</div>)}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="empty-state">
+                    <p>No analysis yet.<br />Seal at least one checkpoint, then click <strong>Agent Insights</strong> to run AI analysis.</p>
                   </div>
                 )}
               </div>
-            </aside>
-          </div>
-        </section>
+            </div>
 
-        <section className={`dash-panel ${panel === "sessions" ? "active" : ""}`}>
-          <div className="grid-cards">
-            {sessions.length === 0 ? (
-              <div className="empty-state">No sessions yet. Start writing to create your first session.</div>
-            ) : (
-              sessions.map((session) => (
-                <article className="session-card" key={session.sessionId}>
-                  <h3>{session.title}</h3>
-                  <div className="card-meta">
-                    {session.checkpointCount} checkpoints - {session.wordCount} words - {formatDate(session.lastSaved)}
-                    <br />
-                    <span className="font-mono">{truncateAddress(session.walletAddress)}</span>
+            {/* ══ WALLET PANEL ══════════════════════════════════════════ */}
+            <div className={`dpanel ${panel === "wallet" ? "active" : ""}`} id="panel-wallet">
+              <div className="wallet-wrap">
+                <div className="panel-head">
+                  <div>
+                    <div className="ph-title">Wallet Info</div>
+                    <div className="ph-sub">Your connected Sui wallet</div>
                   </div>
-                  <div className="card-actions">
-                    {session.proofUrl ? (
-                      <>
-                        <a className="btn-soft" href={session.proofUrl} target="_blank" rel="noreferrer">
-                          <ExternalLink /> View proof
-                        </a>
-                        <button className="btn-soft" type="button" onClick={() => copyText(session.proofUrl!, "Proof URL copied")}>
-                          <Copy /> Copy
-                        </button>
-                      </>
-                    ) : (
-                      <button className="btn-soft" type="button" onClick={() => setPanel("editor")}>
-                        Continue writing
-                      </button>
-                    )}
-                    {session.shareUrl ? (
-                      <a className="btn-soft" href={session.shareUrl} target="_blank" rel="noreferrer">
-                        <ExternalLink /> Share
-                      </a>
-                    ) : null}
+                </div>
+                <div className="winfo-card">
+                  <div className="wic-head">
+                    <div className="wic-avatar">🌊</div>
+                    <div>
+                      <div className="wic-addr">{walletAddress}</div>
+                      <div className="wic-net">{wallet?.name ?? "Sui Wallet"} · Sui Testnet</div>
+                    </div>
+                    <div className="wic-connected">● Connected</div>
                   </div>
-                </article>
-              ))
-            )}
-          </div>
-        </section>
-
-        <section className={`dash-panel ${panel === "proofs" ? "active" : ""}`}>
-          <div className="grid-cards">
-            {proofs.length === 0 ? (
-              <div className="empty-state">No proofs yet. Generate a proof after at least one checkpoint.</div>
-            ) : (
-              proofs.map((proof) => (
-                <article className="proof-card" key={`${proof.url}-${proof.createdAt}`}>
-                  <h3>{proof.title}</h3>
-                  <div className="proof-url">{proof.url}</div>
-                  <div className="card-meta mt-2">
-                    {proof.checkpointCount} checkpoints - {proof.wordCount} words - {formatDate(proof.createdAt)}
+                  <div className="wic-rows">
+                    <div className="wic-row">
+                      <div className="wic-row-lbl">Wallet</div>
+                      <div className="wic-row-val">{wallet?.name ?? "Sui Wallet"}</div>
+                    </div>
+                    <div className="wic-row">
+                      <div className="wic-row-lbl">Network</div>
+                      <div className="wic-row-val green">Sui Testnet</div>
+                    </div>
+                    <div className="wic-row">
+                      <div className="wic-row-lbl">Sessions</div>
+                      <div className="wic-row-val">{sessions.length}</div>
+                    </div>
+                    <div className="wic-row">
+                      <div className="wic-row-lbl">Proofs</div>
+                      <div className="wic-row-val">{proofs.length}</div>
+                    </div>
+                    <div className="wic-row">
+                      <div className="wic-row-lbl">Walrus Network</div>
+                      <div className="wic-row-val blue">Testnet · aggregator.walrus-testnet.walrus.space</div>
+                    </div>
+                    <div className="wic-row">
+                      <div className="wic-row-lbl">MemWal Relayer</div>
+                      <div className="wic-row-val blue">relayer.memory.walrus.xyz</div>
+                    </div>
                   </div>
-                  <div className="card-actions">
-                    <a className="btn-soft" href={proof.url} target="_blank" rel="noreferrer">
-                      <ExternalLink /> Open
-                    </a>
-                    <button className="btn-soft" type="button" onClick={() => copyText(proof.url, "Proof URL copied")}>
-                      <Copy /> Copy
-                    </button>
+                  <div className="wic-foot">
+                    <button type="button" className="wic-btn" onClick={() => copy(walletAddress, "Address copied!")}>Copy Address</button>
+                    <a className="wic-btn" href={`https://suiscan.xyz/testnet/account/${walletAddress}`} target="_blank" rel="noreferrer">Explorer</a>
+                    <button type="button" className="wic-btn danger" onClick={disconnectWallet}>Disconnect</button>
                   </div>
-                </article>
-              ))
-            )}
-          </div>
-        </section>
+                </div>
+              </div>
+            </div>
 
-        <section className={`dash-panel ${panel === "wallet" ? "active" : ""}`}>
-          <div className="wallet-info-grid">
-            <div className="wallet-info-hero">
-              <div className="sidebar-label text-[var(--blue-dark)]">Author identity</div>
-              <h2 className="font-display text-3xl font-bold my-2">{truncateAddress(walletAddress)}</h2>
-              <p className="text-[var(--ink-3)] font-mono break-all">{walletAddress}</p>
-            </div>
-            <div className="panel-card">
-              <h3 className="panel-title">Wallet</h3>
-              <p className="panel-sub">{wallet?.name ?? "Connected Sui wallet"}</p>
-            </div>
-            <div className="panel-card">
-              <h3 className="panel-title">Network</h3>
-              <p className="panel-sub">Sui Testnet</p>
-            </div>
-            <div className="panel-card">
-              <h3 className="panel-title">Artifacts</h3>
-              <p className="panel-sub">
-                {sessions.length} sessions - {proofs.length} proofs
-              </p>
-            </div>
-            <div className="panel-card">
-              <h3 className="panel-title">Connection</h3>
-              <button className="btn-dark w-full" type="button" onClick={() => void disconnectWallet()}>
-                <LogOut /> Disconnect and return home
-              </button>
-            </div>
-          </div>
-        </section>
-      </main>
-
-      {modalOpen && proofUrl ? (
-        <ProofModal
-          checkpointCount={checkpoints.length}
-          onClose={() => setModalOpen(false)}
-          onCopy={() => void copyText(proofUrl, "Proof URL copied")}
-          proofUrl={proofUrl}
-          sessionId={sessionId}
-          walletAddress={walletAddress}
-          wordCount={wordCount}
-        />
-      ) : null}
-
-      {toast ? (
-        <div className="toast-wrap">
-          <div className="toast">{toast}</div>
-        </div>
-      ) : null}
+          </div>{/* end dash-main */}
+        </div>{/* end flex col */}
+      </div>{/* end dash-shell */}
     </div>
   );
-}
-
-function SideNavButton({
-  active,
-  count,
-  icon,
-  label,
-  onClick,
-}: {
-  active: boolean;
-  count?: string | number;
-  icon: React.ReactElement;
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button className={`sb-nav-btn ${active ? "active" : ""}`} type="button" onClick={onClick}>
-      <span>
-        {icon}
-        {label}
-      </span>
-      {count !== undefined ? <span className="nav-count">{count}</span> : null}
-    </button>
-  );
-}
-
-function Ticker({ lastBlobId, nextSaveIn, state }: { lastBlobId: string | null; nextSaveIn: number; state: TickerState }) {
-  const text =
-    state === "saving"
-      ? "Sealing on Walrus..."
-      : state === "saved"
-        ? `Sealed - ${lastBlobId?.slice(0, 10) ?? "blob"}...`
-        : state === "error"
-          ? "Seal failed"
-          : `Next seal in ${nextSaveIn}s`;
-
-  return (
-    <span className={`ticker tk-${state}`}>
-      <span className="pulse-dot" />
-      {text}
-    </span>
-  );
-}
-
-function ProofModal({
-  checkpointCount,
-  onClose,
-  onCopy,
-  proofUrl,
-  sessionId,
-  walletAddress,
-  wordCount,
-}: {
-  checkpointCount: number;
-  onClose: () => void;
-  onCopy: () => void;
-  proofUrl: string;
-  sessionId: string;
-  walletAddress: string;
-  wordCount: number;
-}) {
-  return (
-    <div className="modal-backdrop" role="presentation" onClick={onClose}>
-      <div className="modal-card" role="dialog" aria-modal="true" aria-label="Proof published" onClick={(event) => event.stopPropagation()}>
-        <h2>Proof published.</h2>
-        <p className="text-[var(--ink-3)]">
-          {checkpointCount} checkpoints - {wordCount} words - session_{sessionId} - {truncateAddress(walletAddress)}
-        </p>
-        <div className="modal-url">{proofUrl}</div>
-        <div className="modal-actions">
-          <button className="btn-sui" type="button" onClick={onCopy}>
-            <Copy /> Copy URL
-          </button>
-          <a className="btn-outline" href={proofUrl} target="_blank" rel="noreferrer">
-            <ExternalLink /> Open Proof
-          </a>
-          <button className="btn-soft" type="button" onClick={onClose}>
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function panelTitle(panel: Panel): string {
-  switch (panel) {
-    case "sessions":
-      return "Sessions";
-    case "proofs":
-      return "Proofs";
-    case "wallet":
-      return "Wallet Info";
-    default:
-      return "Editor";
-  }
 }

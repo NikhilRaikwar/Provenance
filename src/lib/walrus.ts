@@ -9,7 +9,7 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export async function storeBlob(data: string, epochs = 5): Promise<string> {
+export async function storeBlob(data: string, epochs = 5, contentType = "application/json"): Promise<string> {
   const url = `${PUBLISHER}/v1/blobs?permanent=true&epochs=${epochs}`;
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -17,7 +17,7 @@ export async function storeBlob(data: string, epochs = 5): Promise<string> {
       const res = await fetch(url, {
         method: "PUT",
         body: data,
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": contentType },
       });
 
       if (!res.ok) throw new Error(`Walrus PUT failed: HTTP ${res.status}`);

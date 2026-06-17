@@ -4,7 +4,7 @@ const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://provenance.app";
 
 /**
  * Dynamic sitemap for Provenance.
- * Registered at /sitemap.xml — crawled by Google, Bing, etc.
+ * Registered at /sitemap.xml for search engine discovery.
  */
 export default function sitemap(): MetadataRoute.Sitemap {
   return [

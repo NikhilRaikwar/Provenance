@@ -19,10 +19,10 @@ async function analyzeWithLLM(excerpts: string[], sessionId: string): Promise<Ag
   const analyzedAt = new Date().toISOString();
 
   if (!process.env.OPENAI_API_KEY) {
-    // Graceful stub — UI still renders, just without real LLM analysis
+    // Graceful stub: UI still renders without real LLM analysis.
     return {
       themes: ["(Set OPENAI_API_KEY to enable AI analysis)"],
-      styleNotes: "AI analysis unavailable — add OPENAI_API_KEY to .env.local",
+      styleNotes: "AI analysis unavailable - add OPENAI_API_KEY to .env.local",
       paceSummary: `${excerpts.length} checkpoints recorded this session.`,
       keyIdeas: [],
       agentSummary: "Writing agent is active and tracking your session. Add an OpenAI key for full analysis.",
@@ -45,11 +45,11 @@ Be concise, insightful, and encouraging. Focus on the writer's process, not just
 ${combinedExcerpts}
 
 Return a JSON object with these exact fields:
-- themes: string[] — 2-4 recurring themes or topics detected across checkpoints
-- styleNotes: string — one sentence about the writer's style (e.g., tone, sentence structure)
-- paceSummary: string — one sentence about writing pace and momentum across checkpoints
-- keyIdeas: string[] — 2-3 key ideas or arguments that appear across the drafts
-- agentSummary: string — a 2-sentence overall assessment of this writing session
+- themes: string[] - 2-4 recurring themes or topics detected across checkpoints
+- styleNotes: string - one sentence about the writer's style (e.g., tone, sentence structure)
+- paceSummary: string - one sentence about writing pace and momentum across checkpoints
+- keyIdeas: string[] - 2-3 key ideas or arguments that appear across the drafts
+- agentSummary: string - a 2-sentence overall assessment of this writing session
 
 Return ONLY valid JSON, no markdown fences.`;
 
@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
     const checkpoints = await recallSession(sessionId);
     if (checkpoints.length === 0) {
       return NextResponse.json(
-        { success: false, error: "No checkpoints found — write and seal at least one checkpoint first." },
+        { success: false, error: "No checkpoints found - write and seal at least one checkpoint first." },
         { status: 404 },
       );
     }
@@ -116,7 +116,7 @@ export async function POST(req: NextRequest) {
         const parsed = JSON.parse(raw) as Checkpoint;
         if (parsed.content?.trim()) excerpts.push(parsed.content);
       } catch {
-        // Skip blobs that can't be fetched — non-fatal
+        // Skip blobs that cannot be fetched; this is non-fatal.
       }
     }
 
@@ -140,10 +140,11 @@ export async function POST(req: NextRequest) {
         });
         const ns = sessionNamespace(sessionId);
         const memoryText = `Agent analysis for session ${sessionId}: themes=${insight.themes.join(",")}. ${insight.agentSummary}`;
-        await memwal.remember(memoryText, ns);
+        const job = await memwal.remember(memoryText, ns);
+        await memwal.waitForRememberJob(job.job_id);
       }
     } catch {
-      // Storing in MemWal is best-effort — don't fail the whole request
+      // Storing in MemWal is best-effort; do not fail the whole request.
     }
 
     return NextResponse.json({ success: true, insight });

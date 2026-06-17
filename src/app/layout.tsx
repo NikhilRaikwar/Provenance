@@ -23,7 +23,7 @@ export const metadata: Metadata = {
 
   // Core SEO
   title: {
-    default: `${APP_NAME} — Your writing, cryptographically proven.`,
+    default: `${APP_NAME} - Your writing, cryptographically proven.`,
     template: `%s | ${APP_NAME}`,
   },
   description: APP_DESCRIPTION,
@@ -63,7 +63,7 @@ export const metadata: Metadata = {
 
   // Open Graph
   openGraph: {
-    title: `${APP_NAME} — Your writing, cryptographically proven.`,
+    title: `${APP_NAME} - Your writing, cryptographically proven.`,
     description:
       "Create permanent Walrus checkpoints, MemWal memory chains, and shareable proof pages for your writing sessions. Built on Sui.",
     url: APP_URL,
@@ -75,7 +75,7 @@ export const metadata: Metadata = {
   // Twitter / X
   twitter: {
     card: "summary_large_image",
-    title: `${APP_NAME} — Your writing, cryptographically proven.`,
+    title: `${APP_NAME} - Your writing, cryptographically proven.`,
     description:
       "Verifiable writing provenance powered by Sui, Walrus, and MemWal. Seal your drafts. Prove your process.",
     creator: "@SumitRaikwar18",

@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ConnectButton } from "@mysten/dapp-kit-react/ui";
 import { useWalletConnection } from "@mysten/dapp-kit-react";
+import { BrainCircuit, FileCheck2, Fingerprint, LockKeyhole, Network, Share2 } from "lucide-react";
 
 export function LandingPage() {
   const connection = useWalletConnection();
@@ -17,37 +18,35 @@ export function LandingPage() {
 
   return (
     <>
-      <nav className="lnav">
-        <div className="brand">
-          <span className="pulse" />
-          <span className="brand-logo">Provenance</span>
-        </div>
-        <div className="lnav-links">
-          <a href="#flow">How it works</a>
-          <a href="#why">Why Walrus</a>
-          <ConnectButton className="btn-connect-nav">
-            <svg
-              width="15"
-              height="15"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              style={{ marginRight: "7px" }}
-            >
+      <div id="page-landing" className="page active">
+        <nav className="nav">
+          <div className="nav-brand">
+            <div className="nav-pulse" />
+            <div className="nav-logo">Provenance</div>
+          </div>
+          <div className="nav-links">
+            <a href="#how">How it works</a>
+            <a href="#why">Why Walrus</a>
+            <ConnectButton className="nav-dashboard-link">
+              Dashboard
+            </ConnectButton>
+          </div>
+          <ConnectButton className="nav-connect-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <rect x="2" y="7" width="20" height="14" rx="2" />
               <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
+              <line x1="12" y1="12" x2="12" y2="16" />
+              <line x1="10" y1="14" x2="14" y2="14" />
             </svg>
             Connect Wallet
           </ConnectButton>
-        </div>
-      </nav>
+        </nav>
 
-      <main>
+        {/* HERO */}
         <section className="hero">
           <div>
             <div className="hero-tag">
-              <span className="pulse" />
+              <span className="hero-tag-dot" />
               Live on Walrus Testnet
             </div>
             <h1 className="hero-h1">
@@ -57,31 +56,23 @@ export function LandingPage() {
             </h1>
             <p className="hero-p">
               Provenance seals every draft milestone as a permanent Walrus blob, stores the ordered checkpoint chain in
-              MemWal agent memory, and publishes a tamper-proof proof page — all anchored to your Sui wallet.
+              MemWal agent memory, and publishes a tamper-proof proof page - all anchored to your Sui wallet.
             </p>
             <div className="hero-btns">
               <ConnectButton className="btn-sui">
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  style={{ marginRight: "9px" }}
-                >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
                   <rect x="2" y="7" width="20" height="14" rx="2" />
                   <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
                 </svg>
                 Connect Wallet to Start
               </ConnectButton>
-              <a className="btn-outline" href="#flow">
-                See the flow
+              <a href="#how" className="btn-outline">
+                See how it works
               </a>
             </div>
             <div className="hero-stats">
               <div>
-                <div className="hs-val">∞</div>
+                <div className="hs-val">53</div>
                 <div className="hs-lbl">Proof lifetime</div>
               </div>
               <div>
@@ -90,170 +81,219 @@ export function LandingPage() {
               </div>
               <div>
                 <div className="hs-val">0</div>
-                <div className="hs-lbl">Middlemen needed</div>
+                <div className="hs-lbl">Trusted middlemen</div>
               </div>
             </div>
           </div>
 
-          <div className="hero-mockup" aria-label="Provenance editor preview">
-            <div className="mock-bar">
-              <div className="mac">
+          <div className="hero-mockup">
+            <div className="mockup-bar">
+              <div className="mac-dots">
                 <span className="r" />
                 <span className="y" />
                 <span className="g" />
               </div>
-              <div className="mock-url">provenance.app/editor — session_a7k2m</div>
+              <div className="mockup-url">provenance.app/editor - session_a7k2m</div>
             </div>
-            <div className="mock-body">
-              <div className="mock-wallet">
-                <span className="pulse" />
-                0x7a23...b9c1 · Sui Testnet
+            <div className="mockup-body">
+              <div className="mb-wallet-chip">
+                <span className="wdot" />
+                0x7a23...b9c1 - Sui Testnet
               </div>
-              <div className="mock-ticker">
-                <span className="pulse" />
-                Next seal in 38s · Demo mode
+              <div className="mb-ticker">
+                <span className="tdot" />
+                Next seal in 38s &nbsp;-&nbsp; Demo mode
               </div>
-              <div className="mock-text" id="hero-type">
+              <div className="mb-text" id="hero-type">
                 In a world where AI generates text effortlessly, the process is the proof
-                <span className="mock-cursor" />
+                <span className="mb-cursor" />
               </div>
-              <div className="mock-cps">
-                <div className="mock-cps-lbl">Sealed checkpoints</div>
-                <div className="mock-cp-row">
+              <div className="mb-cps">
+                <div className="mb-cps-lbl">Sealed checkpoints</div>
+                <div className="mb-cp-row">
                   <span className="cdot" />
-                  #1 · 09:14:02
-                  <span className="cbid">M4hsZGQ1oC...</span>
+                  #1 - 09:14:02
+                  <span className="cbid">M4hsZGQ1oCkt...</span>
                 </div>
-                <div className="mock-cp-row">
+                <div className="mb-cp-row">
                   <span className="cdot" />
-                  #2 · 09:14:17
-                  <span className="cbid">oehkoh0352...</span>
+                  #2 - 09:14:17
+                  <span className="cbid">BKq9XPRT3nWw...</span>
                 </div>
-                <div className="mock-cp-row">
+                <div className="mb-cp-row">
                   <span className="cdot" />
-                  #3 · 09:14:32
-                  <span className="cbid">x7P4mS9kQa...</span>
+                  #3 - 09:14:32
+                  <span className="cbid">YmRs4oGV7TFZ...</span>
                 </div>
               </div>
+              <ConnectButton className="mb-proofbtn">Generate Proof</ConnectButton>
             </div>
           </div>
         </section>
 
-        <section className="flow-sec" id="flow">
+        {/* HOW IT WORKS */}
+        <section className="flow-section" id="how">
           <div className="flow-inner">
-            <div className="sec-ey">User Flow</div>
-            <h2 className="sec-h2">From blank page to permanent proof.</h2>
-            <p className="sec-sub">
-              Connect your Sui wallet once — then write. The agent memory layer handles everything else.
+            <div className="section-ey">User Flow</div>
+            <h2 className="section-h2">From blank page to verified proof.</h2>
+            <p className="section-sub">
+              Connect your Sui wallet once, then write. Everything else happens automatically on Walrus.
             </p>
-            <div className="flow-grid">
-              {[
-                [
-                  "1",
-                  "Connect Sui Wallet",
-                  "Your wallet address anchors the writing session to a verifiable on-chain identity.",
-                ],
-                [
-                  "2",
-                  "Write Normally",
-                  "Every 60 seconds, a checkpoint is SHA-256 hashed and sealed as a permanent Walrus blob.",
-                ],
-                [
-                  "3",
-                  "Agent Analyzes",
-                  "An AI writing agent reads your draft history from MemWal and surfaces insights about your process.",
-                ],
-                [
-                  "4",
-                  "Generate Proof",
-                  "MemWal recalls the full checkpoint chain. A permanent proof page is published to Walrus and shared.",
-                ],
-              ].map(([num, title, desc], index) => (
-                <div className={`flow-step ${index === 0 ? "hi" : ""}`} key={title}>
-                  <div className="fs-num">{num}</div>
-                  <div className="fs-title">{title}</div>
-                  <div className="fs-desc">{desc}</div>
-                </div>
-              ))}
+            <div className="flow-steps">
+              <div className="flow-step active-step">
+                <div className="fs-num">1</div>
+                <div className="fs-title">Connect Sui Wallet</div>
+                <p className="fs-desc">
+                  Connect Slippi, Sui Wallet, or any Sui-compatible wallet. Your address anchors your authorship identity.
+                </p>
+              </div>
+              <div className="flow-step">
+                <div className="fs-num">2</div>
+                <div className="fs-title">Write in the Editor</div>
+                <p className="fs-desc">
+                  Write normally. Every 60 seconds, a checkpoint is SHA-256 hashed and sealed as a permanent Walrus blob
+                  via MemWal.
+                </p>
+              </div>
+              <div className="flow-step">
+                <div className="fs-num">3</div>
+                <div className="fs-title">Generate Proof</div>
+                <p className="fs-desc">
+                  One click rebuilds your full writing timeline from Walrus blobs and publishes it as a permanent proof
+                  page.
+                </p>
+              </div>
+              <div className="flow-step">
+                <div className="fs-num">4</div>
+                <div className="fs-title">Share Anywhere</div>
+                <p className="fs-desc">
+                  Your proof URL is permanent and requires no account to view. Share it with publishers, professors, or
+                  co-founders.
+                </p>
+              </div>
             </div>
           </div>
         </section>
 
-        <section className="why-sec" id="why">
+        <section className="track-section" id="agents">
+          <div className="track-inner">
+            <div className="track-copy">
+              <div className="section-ey">Walrus Track Fit</div>
+              <h2 className="section-h2">A long-running agentic workflow with durable memory.</h2>
+              <p className="section-sub">
+                Provenance turns a writing session into reusable agent context. Checkpoints become persistent files,
+                MemWal keeps the ordered memory chain, and the writing agent can analyze the session history later.
+              </p>
+            </div>
+            <div className="track-grid">
+              <article className="track-card">
+                <BrainCircuit />
+                <strong>MemWal memory</strong>
+                <span>Session namespaces preserve checkpoint chains across visits and tools.</span>
+              </article>
+              <article className="track-card">
+                <FileCheck2 />
+                <strong>Walrus artifacts</strong>
+                <span>Draft checkpoints, share manifests, and proof pages are stored as Walrus blobs.</span>
+              </article>
+              <article className="track-card">
+                <Network />
+                <strong>Agent-ready context</strong>
+                <span>The API exposes recall and analysis routes for workflow automation.</span>
+              </article>
+              <article className="track-card">
+                <Share2 />
+                <strong>Portable sharing</strong>
+                <span>Every session can be shared as a verifier-readable Walrus URL.</span>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        {/* WHY */}
+        <section className="why-section" id="why">
           <div className="why-inner">
             <div>
               <div className="why-lbl">Why it's unforgeable</div>
-              <h2 className="why-h2">The proof is the artifact, not a screenshot.</h2>
+              <h2 className="why-h2">The chain of custody is cryptographic, not claimed.</h2>
               <p className="why-p">
-                Walrus blob IDs are content-addressed. MemWal stores the ordered chain. The proof page is itself a
-                permanent Walrus blob. A different draft produces a different blob ID — always.
+                Every other provenance tool tells you when a file was uploaded. Provenance proves the living process, and
+                the chain cannot be retroactively edited by anyone, including us.
               </p>
             </div>
-            <div className="why-pts">
-              {[
-                [
-                  "🔐",
-                  "Content-addressed blobs",
-                  "Blob IDs are derived from content via SHA-256. You cannot upload a different checkpoint and get the same ID.",
-                ],
-                [
-                  "🧠",
-                  "MemWal agent memory",
-                  "MemWal stores the ordered blob ID chain with timestamps in a namespace the user cannot rewrite.",
-                ],
-                [
-                  "🪪",
-                  "Wallet-anchored identity",
-                  "Your Sui wallet address ties every checkpoint to a cryptographic author identity — not an email.",
-                ],
-                [
-                  "♾️",
-                  "Proof page is a blob",
-                  "The proof HTML is itself a permanent Walrus blob. Its URL is its content address — read-only forever.",
-                ],
-              ].map(([ico, title, desc]) => (
-                <div className="why-pt" key={title}>
-                  <div className="why-pt-ico">{ico}</div>
-                  <div>
-                    <div className="why-pt-title">{title}</div>
-                    <div className="why-pt-desc">{desc}</div>
-                  </div>
+            <div className="why-points">
+              <div className="why-pt">
+                <LockKeyhole className="why-pt-ico" aria-hidden="true" />
+                <div>
+                  <div className="why-pt-title">Content-addressed blobs</div>
+                  <p className="why-pt-desc">
+                    Walrus blob IDs are SHA-256 fingerprints. You cannot upload different content and get the same ID.
+                  </p>
                 </div>
-              ))}
+              </div>
+              <div className="why-pt">
+                <BrainCircuit className="why-pt-ico" aria-hidden="true" />
+                <div>
+                  <div className="why-pt-title">MemWal ordered chain</div>
+                  <p className="why-pt-desc">
+                    MemWal stores the ordered sequence of blob IDs with timestamps in a system outside your control.
+                  </p>
+                </div>
+              </div>
+              <div className="why-pt">
+                <Fingerprint className="why-pt-ico" aria-hidden="true" />
+                <div>
+                  <div className="why-pt-title">Wallet-anchored identity</div>
+                  <p className="why-pt-desc">
+                    Your Sui wallet address is attached to every session. Authorship is tied to a cryptographic identity,
+                    not an email.
+                  </p>
+                </div>
+              </div>
+              <div className="why-pt">
+                <FileCheck2 className="why-pt-ico" aria-hidden="true" />
+                <div>
+                  <div className="why-pt-title">Proof page is a blob</div>
+                  <p className="why-pt-desc">
+                    The proof HTML is itself a permanent Walrus blob. Its URL is its content address - read-only forever.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </section>
-      </main>
 
-      <footer className="land-footer">
-        <div className="lf-inner">
-          <div className="brand">
-            <span className="pulse" />
-            <strong style={{ fontFamily: "'Playfair Display', serif" }}>Provenance</strong>
+        <footer className="land-footer">
+          <div className="lf-inner">
+            <div className="lf-logo">Provenance</div>
+            <div className="lf-links">
+              <a href="https://docs.wal.app" target="_blank" rel="noreferrer">
+                Walrus Docs
+              </a>
+              <a
+                href="https://docs.wal.app/walrus-memory/getting-started/what-is-walrus-memory"
+                target="_blank"
+                rel="noreferrer"
+              >
+                MemWal
+              </a>
+              <a href="https://sui.io" target="_blank" rel="noreferrer">
+                Sui Network
+              </a>
+              <ConnectButton className="lf-dashboard-link">
+                Dashboard
+              </ConnectButton>
+            </div>
+            <div className="lf-built">
+              Built on{" "}
+              <a href="https://walrus.xyz" target="_blank" rel="noreferrer">
+                Walrus
+              </a>{" "}
+              - Sui Overflow 2026
+            </div>
           </div>
-          <div className="lf-links">
-            <a href="https://docs.wal.app" target="_blank" rel="noreferrer">
-              Walrus Docs
-            </a>
-            <a href="https://docs.wal.app/walrus-memory/sdk/quick-start" target="_blank" rel="noreferrer">
-              MemWal SDK
-            </a>
-            <a href="https://sui.io" target="_blank" rel="noreferrer">
-              Sui Network
-            </a>
-            <a href="https://github.com/SumitRaikwar18/Provenance" target="_blank" rel="noreferrer">
-              GitHub
-            </a>
-          </div>
-          <div className="lf-built">
-            Built on{" "}
-            <a href="https://walrus.xyz" target="_blank" rel="noreferrer">
-              Walrus
-            </a>{" "}
-            · Sui Overflow 2026
-          </div>
-        </div>
-      </footer>
+        </footer>
+      </div>
     </>
   );
 }

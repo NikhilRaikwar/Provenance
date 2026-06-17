@@ -5,7 +5,7 @@ export async function GET() {
     memwal_key: Boolean(process.env.MEMWAL_KEY && !process.env.MEMWAL_KEY.includes("<")),
     memwal_account_id: Boolean(process.env.MEMWAL_ACCOUNT_ID && !process.env.MEMWAL_ACCOUNT_ID.includes("<")),
     memwal_server_url: Boolean(process.env.MEMWAL_SERVER_URL),
-    openai_api_key: Boolean(process.env.OPENAI_API_KEY), // optional — agent feature only
+    openai_api_key: Boolean(process.env.OPENAI_API_KEY), // Optional agent feature only.
   };
 
   const required = ["memwal_key", "memwal_account_id"] as const;
@@ -18,7 +18,7 @@ export async function GET() {
       ok,
       checks,
       ...(missing.length > 0 && {
-        error: `Missing required env vars: ${missing.map((k) => k.toUpperCase()).join(", ")}. Copy .env.example → .env.local and fill in your credentials.`,
+        error: `Missing required env vars: ${missing.map((k) => k.toUpperCase()).join(", ")}. Copy .env.example to .env.local and fill in your credentials.`,
       }),
     },
     { status: ok ? 200 : 503 },

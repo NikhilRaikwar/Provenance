@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDAppKit, useCurrentWallet, useWalletConnection } from "@mysten/dapp-kit-react";
+import { ConnectModal } from "@mysten/dapp-kit-react/ui";
 import { nanoid } from "nanoid";
 import { countWords, extractTitle, formatDate, formatTime, truncateAddress } from "@/lib/client-text";
 import type { CheckpointResponse, ProofResponse, Session } from "@/types";
@@ -137,6 +138,21 @@ export function Dashboard() {
   const [agentInsights, setAgentInsights] = useState<AgentInsight | null>(null);
   const [agentState, setAgentState] = useState<"idle" | "analyzing" | "done" | "error">("idle");
   const [agentStrings, setAgentStrings] = useState<string[]>([]);
+  const [showConnect, setShowConnect] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const connectModalRef = useRef<any>(null);
+
+  useEffect(() => {
+    const el = connectModalRef.current;
+    if (!el) return;
+    const handleClosed = () => {
+      setShowConnect(false);
+    };
+    el.addEventListener("closed", handleClosed);
+    return () => {
+      el.removeEventListener("closed", handleClosed);
+    };
+  }, [showConnect]);
 
   const contentRef = useRef(content);
   const cpIndexRef = useRef(checkpointIndex);
@@ -398,6 +414,7 @@ export function Dashboard() {
   const goPanel = useCallback(
     (p: Panel) => {
       setPanel(p);
+      setSidebarOpen(false);
       if (p === "sessions" || p === "proofs" || p === "wallet") loadStorage();
       if (p === "agent" && agentState === "idle" && checkpoints.length >= 1) {
         void runAgentAnalysis();
@@ -422,6 +439,24 @@ export function Dashboard() {
   }[tickerState];
 
 
+
+  if (!walletAddress) {
+    return (
+      <div style={{ display: "grid", placeItems: "center", minHeight: "100vh", background: "var(--bg)", fontFamily: "DM Sans" }}>
+        <div style={{ textAlign: "center", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "18px", padding: "3rem", boxShadow: "var(--sh-pop)", maxWidth: "420px", margin: "1.5rem" }}>
+          <div style={{ fontSize: "3rem", marginBottom: "1.5rem" }}>🔑</div>
+          <h2 style={{ fontFamily: "DM Serif Display", fontSize: "1.8rem", marginBottom: "1rem", color: "var(--ink)" }}>Wallet Disconnected</h2>
+          <p style={{ color: "var(--ink-40)", fontSize: "0.95rem", lineHeight: "1.6", marginBottom: "2rem" }}>
+            Please connect your Sui wallet to access your writing dashboard, seal checkpoints, and generate proofs.
+          </p>
+          <button className="btn-proof" type="button" style={{ margin: "0 auto" }} onClick={() => setShowConnect(true)}>
+            Connect Wallet
+          </button>
+        </div>
+        <ConnectModal open={showConnect} ref={connectModalRef} />
+      </div>
+    );
+  }
 
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
@@ -463,15 +498,17 @@ export function Dashboard() {
 
       {/* ── Dashboard Shell ───────────────────────────────────────────── */}
       <div className="shell">
+        {sidebarOpen && <div className="sidebar-overlay open" onClick={() => setSidebarOpen(false)} />}
 
         {/* ── Sidebar ───────────────────────────────────────────────── */}
-        <aside className="sidebar">
+        <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
           {/* Brand + new session */}
           <div className="sb-head">
             <div className="sb-logo">
               <div className="sb-beacon" />
               Provenance
             </div>
+            <button className="sb-close" type="button" onClick={() => setSidebarOpen(false)}>✕</button>
             <button className="sb-new" type="button" title="New session" onClick={startNewSession}>+</button>
           </div>
 
@@ -529,11 +566,20 @@ export function Dashboard() {
 
           {/* Topbar */}
           <div className="topbar">
-            <div className="tb-left">
-              <div className="tb-title">
-                {{ editor: "Editor", sessions: "Sessions", proofs: "Proofs", wallet: "Wallet Info", agent: "AI Agent Insights" }[panel]}
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <button className="mobile-menu-btn" type="button" onClick={() => setSidebarOpen(true)}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="3" y1="12" x2="21" y2="12" />
+                  <line x1="3" y1="6" x2="21" y2="6" />
+                  <line x1="3" y1="18" x2="21" y2="18" />
+                </svg>
+              </button>
+              <div className="tb-left">
+                <div className="tb-title">
+                  {{ editor: "Editor", sessions: "Sessions", proofs: "Proofs", wallet: "Wallet Info", agent: "AI Agent Insights" }[panel]}
+                </div>
+                <div className="tb-session">session_{sessionId}</div>
               </div>
-              <div className="tb-session">session_{sessionId}</div>
             </div>
             <div className="tb-right">
               {DEMO && <span className="tb-demo">Demo · 15s seal</span>}
